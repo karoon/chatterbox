@@ -18,6 +18,4 @@ The broker will start and listen on port 1883 for MQTT traffic. Command line fla
 * [Seelog](https://github.com/cihub/seelog) for logging
 
 #<a id="unsupported"></a>Not supported features#
-* QOS level 2 is not supported. Only support QOS 1 and 0.
-
 * Topic wildcard is not supported. Topic is always treated as plain string.

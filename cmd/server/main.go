@@ -9,7 +9,7 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"chatterbox/mqtt"
+	mqtt "chatterbox/mqtt"
 )
 
 type CmdFunc func(mqtt *mqtt.Mqtt, conn *net.Conn, client **mqtt.ClientRep)

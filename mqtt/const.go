@@ -26,3 +26,7 @@ const (
 	BAD_USERNAME_OR_PASSWORD
 	NOT_AUTHORIZED
 )
+
+const (
+	ClientIDLimit = 128
+)

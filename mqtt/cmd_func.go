@@ -22,8 +22,8 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 	log.Debugf("Hanling CONNECT, client id:(%s)", clientID)
 
-	if len(clientID) > 23 {
-		log.Debugf("client id(%s) is longer than 23, will send IDENTIFIER_REJECTED", clientID)
+	if len(clientID) > ClientIDLimit {
+		log.Debugf("client id(%s) is longer than 128, will send IDENTIFIER_REJECTED", clientID)
 		SendConnack(IDENTIFIER_REJECTED, conn, nil)
 		return
 	}
@@ -83,7 +83,6 @@ func SendConnack(rc uint8, conn *net.Conn, lock *sync.Mutex) {
 }
 
 /* Handle PUBLISH*/
-// FIXME: support qos = 2
 func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	if *client == nil {
 		panic("client_resp is nil, that means we don't have ClientRep for this client sending PUBLISH")
@@ -94,6 +93,7 @@ func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	clientRep := *client
 	clientRep.UpdateLastTime()
 	topic := mqtt.TopicName
+
 	payload := string(mqtt.Data)
 	qos := mqtt.FixedHeader.QosLevel
 	retain := mqtt.FixedHeader.Retain
