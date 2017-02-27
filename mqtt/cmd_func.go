@@ -114,6 +114,18 @@ func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 		SendPuback(messageID, conn, clientRep.WriteLock)
 		log.Debugf("PUBACK sent to client(%s)", clientID)
 	}
+
+	if qos == 2 {
+		SendPubrec(messageID, conn, clientRep.WriteLock)
+		log.Debugf("PUBREC sent to client(%s)", clientID)
+	}
+}
+
+func SendPubrec(messageID uint16, conn *net.Conn, lock *sync.Mutex) {
+	resp := CreateMqtt(PUBREC)
+	resp.MessageID = messageID
+	bytes, _ := Encode(resp)
+	MqttSendToClient(bytes, conn, lock)
 }
 
 func SendPuback(msg_id uint16, conn *net.Conn, lock *sync.Mutex) {
@@ -290,6 +302,28 @@ func HandlePuback(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 		GlobalRedisClient.SetFlyingMessagesForClient(clientID, messages)
 		log.Debugf("acked flying message(id=%d), client:(%s)", messageID, clientID)
 	}
+}
+
+/* Handle PUBREL */
+func HandlePubrel(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+	if *client == nil {
+		panic("client_resp is nil, that means we don't have ClientRep for this client sending DISCONNECT")
+		return
+	}
+
+	clientID := (*client).Mqtt.ClientID
+	clientRep := *client
+
+	messageID := mqtt.MessageID
+	log.Debugf("Handling PUBREL, client:(%s), messageID:(%d)", clientID, messageID)
+	SendPubcomb(messageID, conn, clientRep.WriteLock)
+}
+
+func SendPubcomb(msg_id uint16, conn *net.Conn, lock *sync.Mutex) {
+	resp := CreateMqtt(PUBCOMP)
+	resp.MessageID = msg_id
+	bytes, _ := Encode(resp)
+	MqttSendToClient(bytes, conn, lock)
 }
 
 /* Helper functions */

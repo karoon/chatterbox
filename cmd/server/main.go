@@ -26,6 +26,7 @@ var gCmdRoute = map[uint8]CmdFunc{
 	mqtt.PINGREQ:     mqtt.HandlePingreq,
 	mqtt.DISCONNECT:  mqtt.HandleDisconnect,
 	mqtt.PUBACK:      mqtt.HandlePuback,
+	mqtt.PUBREL:      mqtt.HandlePubrel,
 }
 
 func handleConnection(conn *net.Conn) {
@@ -105,9 +106,7 @@ func setupLogging() {
 
 func main() {
 	flag.Parse()
-
 	setupLogging()
-
 	mqtt.RecoverFromRedis()
 
 	log.Debugf("Gossipd kicking off, listening localhost:%d", *gPort)
