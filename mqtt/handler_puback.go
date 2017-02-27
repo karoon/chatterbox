@@ -1,0 +1,32 @@
+package mqtt
+
+import (
+	"net"
+
+	log "github.com/cihub/seelog"
+)
+
+/* Handle PUBACK */
+func HandlePuback(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+	if *client == nil {
+		panic("client_resp is nil, that means we don't have ClientRep for this client sending DISCONNECT")
+		return
+	}
+
+	clientID := (*client).Mqtt.ClientID
+	messageID := mqtt.MessageID
+	log.Debugf("Handling PUBACK, client:(%s), messageID:(%d)", clientID, messageID)
+
+	messages := GlobalRedisClient.GetFlyingMessagesForClient(clientID)
+
+	flying_msg, found := (*messages)[messageID]
+
+	if !found || flying_msg.Status != PENDING_ACK {
+		log.Debugf("message(id=%d, client=%s) is not PENDING_ACK, will ignore this PUBACK",
+			messageID, clientID)
+	} else {
+		delete(*messages, messageID)
+		GlobalRedisClient.SetFlyingMessagesForClient(clientID, messages)
+		log.Debugf("acked flying message(id=%d), client:(%s)", messageID, clientID)
+	}
+}

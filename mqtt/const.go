@@ -30,3 +30,8 @@ const (
 const (
 	ClientIDLimit = 128
 )
+
+const (
+	SEND_WILL = uint8(iota)
+	DONT_SEND_WILL
+)
