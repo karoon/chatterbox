@@ -21,8 +21,8 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s - %(module)s-%(funcName)
 _logger = logging.getLogger('root')
 
 g_publish_finish_time = None
-g_subscribe_finish_time = None
-g_subscribe_done = set()
+GlobalSubscribe_finish_time = None
+GlobalSubscribe_done = set()
 g_active_client_num = 0
 g_lost_connection_count
 
@@ -67,7 +67,7 @@ class TestWorker(object):
         _logger.debug('on worker %d, published mid=%d' % (self.worker_id, mid))
 
     def on_subscribe(self, mosq, obj, mid, qos_list):
-        g_subscribe_done.add(self.worker_id)
+        GlobalSubscribe_done.add(self.worker_id)
         self.subscribe_done = True
         #_logger.debug('on worker %d, subscribed mid=%d' % (self.worker_id, mid))
 
@@ -113,7 +113,7 @@ class TestWorker(object):
                 else:
                     _logger.debug("worker %d, %.3f seconds late" % (self.worker_id, late))
                     
-        g_subscribe_done.add(self.worker_id)
+        GlobalSubscribe_done.add(self.worker_id)
         self.subscribe_done = True
         self.client.disconnect()
 
@@ -197,9 +197,9 @@ def start_testing(hostname, port, thread_num, sleep):
         workers.append(worker)
         time.sleep(0.01)
 
-    while len(g_subscribe_done) < g_active_client_num:
+    while len(GlobalSubscribe_done) < g_active_client_num:
         _logger.info("waiting %d/%d clients to finish subscribe" %
-                     (g_active_client_num - len(g_subscribe_done),
+                     (g_active_client_num - len(GlobalSubscribe_done),
                       g_active_client_num))
         time.sleep(1)
 

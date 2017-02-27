@@ -40,8 +40,8 @@ func (msg *MqttMessage) RedisKey() string {
 
 func (msg *MqttMessage) Store() {
 	key := msg.RedisKey()
-	G_redis_client.Store(key, msg)
-	G_redis_client.Expire(key, 7*24*3600)
+	GlobalRedisClient.Store(key, msg)
+	GlobalRedisClient.Expire(key, 7*24*3600)
 }
 
 // InternalID -> Message
@@ -83,7 +83,7 @@ func GetMqttMessageByID(internalID uint64) *MqttMessage {
 	key := fmt.Sprintf("gossipd.mqtt-msg.%d", internalID)
 
 	msg := new(MqttMessage)
-	G_redis_client.Fetch(key, msg)
+	GlobalRedisClient.Fetch(key, msg)
 	return msg
 }
 

@@ -9,39 +9,44 @@ import (
 	log "github.com/cihub/seelog"
 )
 
-/* Glabal status */
-var G_clients map[string]*ClientRep = make(map[string]*ClientRep)
-var G_clients_lock *sync.Mutex = new(sync.Mutex)
+// GlobalClients of mqtt
+var GlobalClients = make(map[string]*ClientRep)
 
-// Map topic => sub
-// sub is implemented as map, key is client_id, value is qos
-var G_subs map[string]map[string]uint8 = make(map[string]map[string]uint8)
-var G_subs_lock *sync.Mutex = new(sync.Mutex)
-var G_redis_client *RedisClient = StartRedisClient()
+// GlobalClientsLock of mqtt
+var GlobalClientsLock = new(sync.Mutex)
 
-// This function should be called upon starting up. It will
-// try to recover global status(G_subs, etc) from Redis.
+// GlobalSubs of mqtt
+var GlobalSubs = make(map[string]map[string]uint8)
+
+// GlobalSubsLock of mqtt
+var GlobalSubsLock = new(sync.Mutex)
+
+// GlobalRedisClient of mqtt
+var GlobalRedisClient = StartRedisClient()
+
+// RecoverFromRedis This function should be called upon starting up. It will
+// try to recover global status(GlobalSubs, etc) from Redis.
 func RecoverFromRedis() {
 	// Reconstruct the subscription map from redis records
-	client_id_keys := G_redis_client.GetSubsClients()
+	clientIDKeys := GlobalRedisClient.GetSubsClients()
 	log.Info("Recovering subscription info from Redis")
-	for _, client_id_key := range client_id_keys {
-		sub_map := make(map[string]uint8)
-		G_redis_client.Fetch(client_id_key, &sub_map)
-		var client_id string
-		fmt.Sscanf(client_id_key, "gossipd.client-subs.%s", &client_id)
+	for _, clientIDKey := range clientIDKeys {
+		subMap := make(map[string]uint8)
+		GlobalRedisClient.Fetch(clientIDKey, &subMap)
+		var clientID string
+		fmt.Sscanf(clientIDKey, "gossipd.client-subs.%s", &clientID)
 
-		for topic, qos := range sub_map {
+		for topic, qos := range subMap {
 			// lock won't be needed since this is at the startup phase
-			subs := G_subs[topic]
+			subs := GlobalSubs[topic]
 			if subs == nil {
 				log.Debug("current subscription is the first client to topic:", topic)
 				subs = make(map[string]uint8)
-				G_subs[topic] = subs
+				GlobalSubs[topic] = subs
 			}
-			subs[client_id] = qos
+			subs[clientID] = qos
 		}
-		log.Debugf("client(%s) subscription info recovered", client_id)
+		log.Debugf("client(%s) subscription info recovered", clientID)
 	}
 }
 

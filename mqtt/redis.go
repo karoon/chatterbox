@@ -190,7 +190,7 @@ func (client *RedisClient) AddFlyingMessage(dest_id string, flyMsg *FlyingMessag
 }
 
 func (client *RedisClient) IsFlyingMessagePendingAck(client_id string, message_id uint16) bool {
-	messages := G_redis_client.GetFlyingMessagesForClient(client_id)
+	messages := GlobalRedisClient.GetFlyingMessagesForClient(client_id)
 
 	flyingMsg, found := (*messages)[message_id]
 

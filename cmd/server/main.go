@@ -39,7 +39,7 @@ func handleConnection(conn *net.Conn) {
 			debug.PrintStack()
 		}
 		if client != nil {
-			mqtt.ForceDisconnect(client, mqtt.G_clients_lock, mqtt.SEND_WILL)
+			mqtt.ForceDisconnect(client, mqtt.GlobalClientsLock, mqtt.SEND_WILL)
 		}
 		(*conn).Close()
 	}()

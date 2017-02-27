@@ -35,8 +35,8 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 		return
 	}
 
-	G_clients_lock.Lock()
-	clientRep, existed := G_clients[clientID]
+	GlobalClientsLock.Lock()
+	clientRep, existed := GlobalClients[clientID]
 	if existed {
 		log.Debugf("%s existed, will close old connection", clientID)
 		ForceDisconnect(clientRep, nil, DONT_SEND_WILL)
@@ -47,8 +47,8 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 	clientRep = CreateClientRep(clientID, conn, mqtt)
 
-	G_clients[clientID] = clientRep
-	G_clients_lock.Unlock()
+	GlobalClients[clientID] = clientRep
+	GlobalClientsLock.Unlock()
 
 	*client = clientRep
 	go CheckTimeout(clientRep)
@@ -60,14 +60,14 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 		// restore subscriptions to clientRep
 		subs := make(map[string]uint8)
 		key := fmt.Sprintf("gossipd.client-subs.%s", clientID)
-		G_redis_client.Fetch(key, &subs)
+		GlobalRedisClient.Fetch(key, &subs)
 		clientRep.Subscriptions = subs
 
 	} else {
 		// Remove subscriptions and flying message
 		RemoveAllSubscriptionsOnConnect(clientID)
 		empty := make(map[uint16]FlyingMessage)
-		G_redis_client.SetFlyingMessagesForClient(clientID, &empty)
+		GlobalRedisClient.SetFlyingMessagesForClient(clientID, &empty)
 	}
 
 	SendConnack(ACCEPTED, conn, clientRep.WriteLock)
@@ -136,22 +136,22 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	clientRep.UpdateLastTime()
 
 	defer func() {
-		G_subs_lock.Unlock()
+		GlobalSubsLock.Unlock()
 		SendSuback(mqtt.MessageID, mqtt.TopicsQos, conn, clientRep.WriteLock)
 	}()
 
-	G_subs_lock.Lock()
+	GlobalSubsLock.Lock()
 	for i := 0; i < len(mqtt.Topics); i++ {
 		topic := mqtt.Topics[i]
 		qos := mqtt.TopicsQos[i]
 		log.Debugf("will subscribe client(%s) to topic(%s) with qos=%d",
 			clientID, topic, qos)
 
-		subs := G_subs[topic]
+		subs := GlobalSubs[topic]
 		if subs == nil {
 			log.Debugf("current subscription is the first client to topic:(%s)", topic)
 			subs = make(map[string]uint8)
-			G_subs[topic] = subs
+			GlobalSubs[topic] = subs
 		}
 
 		// FIXME: this may override existing subscription with higher QOS
@@ -161,11 +161,11 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 		if !clientRep.Mqtt.ConnectFlags.CleanSession {
 			// Store subscriptions to redis
 			key := fmt.Sprintf("gossipd.client-subs.%s", clientID)
-			G_redis_client.Store(key, clientRep.Subscriptions)
+			GlobalRedisClient.Store(key, clientRep.Subscriptions)
 		}
 
 		log.Debugf("finding retained message for (%s)", topic)
-		retainedMsg := G_redis_client.GetRetainMessage(topic)
+		retainedMsg := GlobalRedisClient.GetRetainMessage(topic)
 		if retainedMsg != nil {
 			go Deliver(clientID, qos, retainedMsg)
 			log.Debugf("delivered retained message for (%s)", topic)
@@ -197,11 +197,11 @@ func HandleUnsubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	clientRep.UpdateLastTime()
 
 	defer func() {
-		G_subs_lock.Unlock()
+		GlobalSubsLock.Unlock()
 		SendUnsuback(mqtt.MessageID, conn, clientRep.WriteLock)
 	}()
 
-	G_subs_lock.Lock()
+	GlobalSubsLock.Lock()
 	for i := 0; i < len(mqtt.Topics); i++ {
 		topic := mqtt.Topics[i]
 
@@ -210,13 +210,13 @@ func HandleUnsubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 		delete(clientRep.Subscriptions, topic)
 
-		subs := G_subs[topic]
+		subs := GlobalSubs[topic]
 		if subs == nil {
 			log.Debugf("topic(%s) has no subscription, no need to unsubscribe", topic)
 		} else {
 			delete(subs, clientID)
 			if len(subs) == 0 {
-				delete(G_subs, topic)
+				delete(GlobalSubs, topic)
 				log.Debugf("last subscription of topic(%s) is removed, so this topic is removed as well", topic)
 			}
 		}
@@ -264,7 +264,7 @@ func HandleDisconnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 		return
 	}
 
-	ForceDisconnect(*client, G_clients_lock, DONT_SEND_WILL)
+	ForceDisconnect(*client, GlobalClientsLock, DONT_SEND_WILL)
 }
 
 /* Handle PUBACK */
@@ -278,7 +278,7 @@ func HandlePuback(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	messageID := mqtt.MessageID
 	log.Debugf("Handling PUBACK, client:(%s), messageID:(%d)", clientID, messageID)
 
-	messages := G_redis_client.GetFlyingMessagesForClient(clientID)
+	messages := GlobalRedisClient.GetFlyingMessagesForClient(clientID)
 
 	flying_msg, found := (*messages)[messageID]
 
@@ -287,7 +287,7 @@ func HandlePuback(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 			messageID, clientID)
 	} else {
 		delete(*messages, messageID)
-		G_redis_client.SetFlyingMessagesForClient(clientID, messages)
+		GlobalRedisClient.SetFlyingMessagesForClient(clientID, messages)
 		log.Debugf("acked flying message(id=%d), client:(%s)", messageID, clientID)
 	}
 }
@@ -327,7 +327,7 @@ func CheckTimeout(client *ClientRep) {
 			deadline := int64(float64(lastTimestamp) + float64(interval)*1.5)
 
 			if deadline < now {
-				ForceDisconnect(client, G_clients_lock, SEND_WILL)
+				ForceDisconnect(client, GlobalClientsLock, SEND_WILL)
 				log.Debugf("client(%s) is timeout, kicked out",
 					clientID)
 			} else {
@@ -360,26 +360,26 @@ func ForceDisconnect(client *ClientRep, lock *sync.Mutex, send_will uint8) {
 		log.Debugf("lock accuired")
 	}
 
-	delete(G_clients, clientID)
+	delete(GlobalClients, clientID)
 
 	if client.Mqtt.ConnectFlags.CleanSession {
 		// remove her subscriptions
 		log.Debugf("Removing subscriptions for (%s)", clientID)
-		G_subs_lock.Lock()
+		GlobalSubsLock.Lock()
 		for topic := range client.Subscriptions {
-			delete(G_subs[topic], clientID)
-			if len(G_subs[topic]) == 0 {
-				delete(G_subs, topic)
+			delete(GlobalSubs[topic], clientID)
+			if len(GlobalSubs[topic]) == 0 {
+				delete(GlobalSubs, topic)
 				log.Debugf("last subscription of topic(%s) is removed, so this topic is removed as well", topic)
 			}
 		}
 		showSubscriptions()
-		G_subs_lock.Unlock()
+		GlobalSubsLock.Unlock()
 		log.Debugf("Removed all subscriptions for (%s)", clientID)
 
 		// remove her flying messages
 		log.Debugf("Removing all flying messages for (%s)", clientID)
-		G_redis_client.RemoveAllFlyingMessagesForClient(clientID)
+		GlobalRedisClient.RemoveAllFlyingMessagesForClient(clientID)
 		log.Debugf("Removed all flying messages for (%s)", clientID)
 	}
 
@@ -418,28 +418,28 @@ func PublishMessage(mqttMsg *MqttMessage) {
 	// Update global topic record
 
 	if mqttMsg.Retain {
-		G_redis_client.SetRetainMessage(topic, mqttMsg)
+		GlobalRedisClient.SetRetainMessage(topic, mqttMsg)
 		log.Debugf("Set the message(%s) as the current retain content of topic:%s", payload, topic)
 	}
 
 	// Dispatch delivering jobs
-	G_subs_lock.Lock()
-	subs, found := G_subs[topic]
+	GlobalSubsLock.Lock()
+	subs, found := GlobalSubs[topic]
 	if found {
 		for dest_id, dest_qos := range subs {
 			go Deliver(dest_id, dest_qos, mqttMsg)
 			log.Debugf("Started deliver job for %s", dest_id)
 		}
 	}
-	G_subs_lock.Unlock()
+	GlobalSubsLock.Unlock()
 	log.Debugf("All delivering job dispatched")
 }
 
 func DeliverOnConnection(clientID string) {
 	log.Debugf("client(%s) just reconnected, delivering on the fly messages", clientID)
-	messages := G_redis_client.GetFlyingMessagesForClient(clientID)
+	messages := GlobalRedisClient.GetFlyingMessagesForClient(clientID)
 	empty := make(map[uint16]FlyingMessage)
-	G_redis_client.SetFlyingMessagesForClient(clientID, &empty)
+	GlobalRedisClient.SetFlyingMessagesForClient(clientID, &empty)
 	log.Debugf("client(%s), all flying messages put in pipeline, removed records in redis", clientID)
 
 	for messageID, msg := range *messages {
@@ -460,9 +460,9 @@ func DeliverOnConnection(clientID string) {
 
 // Real heavy lifting jobs for delivering message
 func DeliverMessage(dest_clientID string, qos uint8, msg *MqttMessage) {
-	G_clients_lock.Lock()
-	clientRep, found := G_clients[dest_clientID]
-	G_clients_lock.Unlock()
+	GlobalClientsLock.Lock()
+	clientRep, found := GlobalClients[dest_clientID]
+	GlobalClientsLock.Unlock()
 	var conn *net.Conn
 	var lock *sync.Mutex
 	messageID := NextOutMessageIdForClient(dest_clientID)
@@ -472,7 +472,7 @@ func DeliverMessage(dest_clientID string, qos uint8, msg *MqttMessage) {
 		conn = clientRep.Conn
 		lock = clientRep.WriteLock
 	} else {
-		G_redis_client.AddFlyingMessage(dest_clientID, flyMsg)
+		GlobalRedisClient.AddFlyingMessage(dest_clientID, flyMsg)
 		log.Debugf("client(%s) is offline, added flying message to Redis, message id=%d",
 			dest_clientID, messageID)
 		return
@@ -499,7 +499,7 @@ func DeliverMessage(dest_clientID string, qos uint8, msg *MqttMessage) {
 
 	if qos == 1 {
 		flyMsg.Status = PENDING_ACK
-		G_redis_client.AddFlyingMessage(dest_clientID, flyMsg)
+		GlobalRedisClient.AddFlyingMessage(dest_clientID, flyMsg)
 		log.Debugf("message(msg_id=%d) sent to client(%s), waiting for ACK, added to redis",
 			messageID, dest_clientID)
 	}
@@ -546,7 +546,7 @@ func RetryDeliver(sleep uint64, dest_clientID string, qos uint8, msg *MqttMessag
 
 	time.Sleep(time.Duration(sleep) * time.Second)
 
-	if G_redis_client.IsFlyingMessagePendingAck(dest_clientID, msg.MessageID) {
+	if GlobalRedisClient.IsFlyingMessagePendingAck(dest_clientID, msg.MessageID) {
 		DeliverMessage(dest_clientID, qos, msg)
 		log.Debugf("Retried delivering message %s:%d, will sleep %d seconds before next attampt",
 			dest_clientID, msg.MessageID, sleep*2)
@@ -563,23 +563,23 @@ func RetryDeliver(sleep uint64, dest_clientID string, qos uint8, msg *MqttMessag
 func RemoveAllSubscriptionsOnConnect(clientID string) {
 	subs := new(map[string]uint8)
 	key := fmt.Sprintf("gossipd.client-subs.%s", clientID)
-	G_redis_client.Fetch(key, subs)
+	GlobalRedisClient.Fetch(key, subs)
 
-	G_redis_client.Delete(key)
+	GlobalRedisClient.Delete(key)
 
-	G_subs_lock.Lock()
+	GlobalSubsLock.Lock()
 	for topic := range *subs {
-		delete(G_subs[topic], clientID)
+		delete(GlobalSubs[topic], clientID)
 	}
-	G_subs_lock.Unlock()
+	GlobalSubsLock.Unlock()
 
 }
 
 func showSubscriptions() {
 	// Disable for now
 	return
-	fmt.Printf("Global Subscriptions: %d topics\n", len(G_subs))
-	for topic, subs := range G_subs {
+	fmt.Printf("Global Subscriptions: %d topics\n", len(GlobalSubs))
+	for topic, subs := range GlobalSubs {
 		fmt.Printf("\t%s: %d subscriptions\n", topic, len(subs))
 		for clientID, qos := range subs {
 			fmt.Println("\t\t", clientID, qos)
