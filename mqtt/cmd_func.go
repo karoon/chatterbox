@@ -493,22 +493,22 @@ func DeliverOnConnection(clientID string) {
 }
 
 // Real heavy lifting jobs for delivering message
-func DeliverMessage(dest_clientID string, qos uint8, msg *MqttMessage) {
+func DeliverMessage(destClientID string, qos uint8, msg *MqttMessage) {
 	GlobalClientsLock.Lock()
-	clientRep, found := GlobalClients[dest_clientID]
+	clientRep, found := GlobalClients[destClientID]
 	GlobalClientsLock.Unlock()
 	var conn *net.Conn
 	var lock *sync.Mutex
-	messageID := NextOutMessageIdForClient(dest_clientID)
-	flyMsg := CreateFlyingMessage(dest_clientID, msg.InternalID, qos, PENDING_PUB, messageID)
+	messageID := NextOutMessageIdForClient(destClientID)
+	flyMsg := CreateFlyingMessage(destClientID, msg.InternalID, qos, PENDING_PUB, messageID)
 
 	if found {
 		conn = clientRep.Conn
 		lock = clientRep.WriteLock
 	} else {
-		GlobalRedisClient.AddFlyingMessage(dest_clientID, flyMsg)
+		GlobalRedisClient.AddFlyingMessage(destClientID, flyMsg)
 		log.Debugf("client(%s) is offline, added flying message to Redis, message id=%d",
-			dest_clientID, messageID)
+			destClientID, messageID)
 		return
 	}
 
@@ -524,22 +524,21 @@ func DeliverMessage(dest_clientID string, qos uint8, msg *MqttMessage) {
 	bytes, _ := Encode(resp)
 
 	lock.Lock()
-	defer func() {
-		lock.Unlock()
-	}()
+	defer lock.Unlock()
+
 	// FIXME: add write deatline
 	(*conn).Write(bytes)
 	log.Debugf("message sent by Write()")
 
 	if qos == 1 {
 		flyMsg.Status = PENDING_ACK
-		GlobalRedisClient.AddFlyingMessage(dest_clientID, flyMsg)
+		GlobalRedisClient.AddFlyingMessage(destClientID, flyMsg)
 		log.Debugf("message(msg_id=%d) sent to client(%s), waiting for ACK, added to redis",
-			messageID, dest_clientID)
+			messageID, destClientID)
 	}
 }
 
-func Deliver(dest_clientID string, dest_qos uint8, msg *MqttMessage) {
+func Deliver(destClientID string, dest_qos uint8, msg *MqttMessage) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debugf("got panic, will print stack")
@@ -548,7 +547,7 @@ func Deliver(dest_clientID string, dest_qos uint8, msg *MqttMessage) {
 		}
 	}()
 
-	log.Debugf("Delivering msg(internalID=%d) to client(%s)", msg.InternalID, dest_clientID)
+	log.Debugf("Delivering msg(internalID=%d) to client(%s)", msg.InternalID, destClientID)
 
 	// Get effective qos: the smaller of the publisher and the subscriber
 	qos := msg.Qos
@@ -556,15 +555,15 @@ func Deliver(dest_clientID string, dest_qos uint8, msg *MqttMessage) {
 		qos = dest_qos
 	}
 
-	DeliverMessage(dest_clientID, qos, msg)
+	DeliverMessage(destClientID, qos, msg)
 
 	if qos > 0 {
 		// Start retry
-		go RetryDeliver(20, dest_clientID, qos, msg)
+		go RetryDeliver(20, destClientID, qos, msg)
 	}
 }
 
-func RetryDeliver(sleep uint64, dest_clientID string, qos uint8, msg *MqttMessage) {
+func RetryDeliver(sleep uint64, destClientID string, qos uint8, msg *MqttMessage) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debugf("got panic, will print stack")
@@ -580,14 +579,14 @@ func RetryDeliver(sleep uint64, dest_clientID string, qos uint8, msg *MqttMessag
 
 	time.Sleep(time.Duration(sleep) * time.Second)
 
-	if GlobalRedisClient.IsFlyingMessagePendingAck(dest_clientID, msg.MessageID) {
-		DeliverMessage(dest_clientID, qos, msg)
+	if GlobalRedisClient.IsFlyingMessagePendingAck(destClientID, msg.MessageID) {
+		DeliverMessage(destClientID, qos, msg)
 		log.Debugf("Retried delivering message %s:%d, will sleep %d seconds before next attampt",
-			dest_clientID, msg.MessageID, sleep*2)
-		RetryDeliver(sleep*2, dest_clientID, qos, msg)
+			destClientID, msg.MessageID, sleep*2)
+		RetryDeliver(sleep*2, destClientID, qos, msg)
 	} else {
 		log.Debugf("message (%s:%d) is not pending ACK, stop retry delivering",
-			dest_clientID, msg.MessageID)
+			destClientID, msg.MessageID)
 	}
 }
 
