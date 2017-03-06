@@ -1,10 +1,11 @@
-package mqtt
+package connections
 
 import redis "gopkg.in/redis.v5"
 
 var redisClient *redis.Client
 
-func getRedisClient() *redis.Client {
+// GetRedisClient returns redis client
+func GetRedisClient() *redis.Client {
 	if redisClient != nil {
 		return redisClient
 	}

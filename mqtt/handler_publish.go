@@ -1,6 +1,8 @@
 package mqtt
 
 import (
+	"chatterbox/mqtt/acl"
+
 	"net"
 	"time"
 
@@ -19,7 +21,7 @@ func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	clientRep.UpdateLastTime()
 	topic := mqtt.TopicName
 
-	if !checkACL(clientID, topic, aclPub) {
+	if !acl.CheckACL(clientID, topic, acl.AclPub) {
 		log.Debugf("client hasnt permission")
 		return
 	}

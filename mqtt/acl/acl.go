@@ -1,25 +1,35 @@
-package mqtt
+package acl
 
-import log "github.com/cihub/seelog"
+import (
+	"chatterbox/mqtt/connections"
+
+	log "github.com/cihub/seelog"
+)
 
 const (
 	aclPrefix = "mqtt_acl:"
 )
 
 const (
-	aclSub    = "1" // acl for subscribe
-	aclPub    = "2" // acl for publish
-	aclPubSub = "3" // acl for publish subscribe
+	aclAllow = true
+	aclDeny  = false
 )
 
-func checkACL(clientID string, topic string, acltype string) bool {
-	rclient := getRedisClient()
+const (
+	AclSub    = "1" // acl for subscribe
+	AclPub    = "2" // acl for publish
+	AclPubSub = "3" // acl for publish subscribe
+)
+
+// CheckACL for client
+func CheckACL(clientID, topic, acltype string) bool {
+	rclient := connections.GetRedisClient()
 
 	key := aclPrefix + clientID
 
 	res, err := rclient.HGetAll(key).Result()
 	if err != nil {
-		return false
+		return aclDeny
 	}
 
 	for k, v := range res {
@@ -27,18 +37,18 @@ func checkACL(clientID string, topic string, acltype string) bool {
 			log.Debugf("topic:%s perm:%s acltype:%s", k, v, acltype)
 			if v == acltype {
 				log.Debugf("client:%s has permission type %s to topic:%s", clientID, acltype, topic)
-				return true
+				return aclAllow
 			}
 		}
 	}
 
 	log.Debugf("client:%s has not permission type %s to topic:%s", clientID, acltype, topic)
 
-	return false
+	return aclDeny
 }
 
-func setACL(clientID string, topic string, acltype string) {
-	rclient := getRedisClient()
+func setACL(clientID, topic, acltype string) {
+	rclient := connections.GetRedisClient()
 
 	key := aclPrefix + clientID
 
@@ -50,8 +60,8 @@ func setACL(clientID string, topic string, acltype string) {
 	log.Debugf("%b", b)
 }
 
-func removeACL(clientID string, topic string) {
-	rclient := getRedisClient()
+func removeACL(clientID, topic string) {
+	rclient := connections.GetRedisClient()
 
 	key := aclPrefix + clientID
 
