@@ -19,6 +19,11 @@ func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	clientRep.UpdateLastTime()
 	topic := mqtt.TopicName
 
+	if !checkACL(clientID, topic, aclPub) {
+		log.Debugf("client hasnt permission")
+		return
+	}
+
 	payload := string(mqtt.Data)
 	qos := mqtt.FixedHeader.QosLevel
 	retain := mqtt.FixedHeader.Retain

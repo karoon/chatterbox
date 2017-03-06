@@ -12,14 +12,14 @@ import (
  reference MqttMessage
 */
 type MqttMessage struct {
-	Topic          string
-	Payload        string
-	Qos            uint8
-	SenderClientID string
-	MessageID      uint16
-	InternalID     uint64
-	CreatedAt      int64
-	Retain         bool
+	Topic          string `json:"topic"`
+	Payload        string `json:"payload"`
+	Qos            uint8  `json:"qos"`
+	SenderClientID string `json:"client_id"`
+	MessageID      uint16 `json:"message_id"`
+	InternalID     uint64 `json:"internal_id"`
+	CreatedAt      int64  `json:"created_at"`
+	Retain         bool   `json:"retain"`
 }
 
 func (msg *MqttMessage) Show() {
@@ -49,18 +49,15 @@ func (msg *MqttMessage) Store() {
 var G_messages map[uint64]*MqttMessage = make(map[uint64]*MqttMessage)
 var G_messages_lock *sync.Mutex = new(sync.Mutex)
 
-func CreateMqttMessage(topic, payload, sender_id string,
-	qos uint8, message_id uint16,
-	created_at int64, retain bool) *MqttMessage {
-
+func CreateMqttMessage(topic, payload, sender_id string, qos uint8, messageID uint16, createdAt int64, retain bool) *MqttMessage {
 	msg := new(MqttMessage)
 	msg.Topic = topic
 	msg.Payload = payload
 	msg.Qos = qos
 	msg.SenderClientID = sender_id
-	msg.MessageID = message_id
+	msg.MessageID = messageID
 	msg.InternalID = GetNextMessageInternalID()
-	msg.CreatedAt = created_at
+	msg.CreatedAt = createdAt
 	msg.Retain = retain
 
 	G_messages_lock.Lock()
@@ -105,12 +102,12 @@ const (
 	PENDING_ACK
 )
 
-func CreateFlyingMessage(dest_id string, messageInternalID uint64, qos, status uint8, message_id uint16) *FlyingMessage {
+func CreateFlyingMessage(dest_id string, messageInternalID uint64, qos, status uint8, messageID uint16) *FlyingMessage {
 	msg := new(FlyingMessage)
 	msg.Qos = qos
 	msg.DestClientID = dest_id
 	msg.MessageInternalID = messageInternalID
 	msg.Status = status
-	msg.ClientMessageID = message_id
+	msg.ClientMessageID = messageID
 	return msg
 }

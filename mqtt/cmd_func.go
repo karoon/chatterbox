@@ -1,3 +1,0 @@
-package mqtt
-
-/* Helper functions */

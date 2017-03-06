@@ -19,3 +19,11 @@ The broker will start and listen on port 1883 for MQTT traffic. Command line fla
 
 #<a id="unsupported"></a>Not supported features#
 * Topic wildcard is not supported. Topic is always treated as plain string.
+
+#Requirements#
+
+#Feature List#
+- Authentication
+- ACL
+- Message Storage
+- 

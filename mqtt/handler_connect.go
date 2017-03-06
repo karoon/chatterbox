@@ -15,7 +15,7 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	log.Debugf("Hanling CONNECT, client id:(%s)", clientID)
 
 	if len(clientID) > ClientIDLimit {
-		log.Debugf("client id(%s) is longer than 128, will send IDENTIFIER_REJECTED", clientID)
+		log.Debugf("client id(%s) is longer than %d, will send IDENTIFIER_REJECTED", clientID, ClientIDLimit)
 		SendConnack(IDENTIFIER_REJECTED, conn, nil)
 		return
 	}
