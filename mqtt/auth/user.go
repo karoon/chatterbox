@@ -1,84 +1,43 @@
 package auth
 
 import (
-	"chatterbox/mqtt/connections"
+	"crypto/sha256"
 	"errors"
-
-	log "github.com/cihub/seelog"
-	"github.com/pborman/uuid"
+	"fmt"
+	"io"
 )
 
-const (
-	authPrefix        = "mqtt_user:"
-	authFieldPassword = "password"
-	authFieldID       = "id"
-	authFieldUsername = "username"
-)
+var authModelDriver = "redis"
 
-const (
-	authAllow = true
-	authDeny  = false
-)
+// var authModelDriver = "mongodb"
 
 // ErrUsernameExist username exist error
 var ErrUsernameExist = errors.New("username already exist")
 
+// User struct
 type User struct {
-	userKey  string
-	id       string
-	username string
-	password Password
+	ID       string `json:"id" bson:"id"`
+	Username string `json:"username" bson:"username"`
+	Password string `json:"password" bson:"password"`
+
+	driver Driver
 }
 
 func NewUserHandler() *User {
-	return &User{}
-}
+	u := &User{}
 
-func NewUserFromUsername(username string) (u *User, err error) {
-	u = &User{}
-	u.SetUsername(username)
-	rclient := connections.GetRedisClient()
-	smap, err := rclient.HGetAll(u.userKey).Result()
-	if err != nil {
-		return nil, err
+	switch authModelDriver {
+	case "redis":
+		u.driver = ModelDriver{newRedisDriver()}
+	case "mongodb":
+		u.driver = ModelDriver{newMongoDriver()}
 	}
 
-	u.id = smap[authFieldID]
-	u.password = Password(smap[authFieldPassword])
-
-	return u, nil
-}
-
-func (u *User) SetPassword(pasword string) *User {
-	u.password = Password(pasword)
 	return u
 }
 
-func (u *User) setKey() {
-	u.userKey = authPrefix + u.username
-}
-
-func (u *User) SetUsername(username string) *User {
-	u.username = username
-	u.setKey()
-	return u
-}
-
-func (u *User) makeID() {
-	u.id = uuid.New()
-}
-
-func (u *User) Login() (bool, error) {
-	checkU, err := NewUserFromUsername(u.username)
-	if err != nil {
-		return authDeny, err
-	}
-
-	if u.password.Hash() == checkU.password.String() {
-		return authAllow, nil
-	}
-
-	return authDeny, nil
+func (u *User) UsernameExists() (exist bool, err error) {
+	return u.driver.CheckUsername(u.Username)
 }
 
 func (u *User) Register() (user *User, err error) {
@@ -89,34 +48,64 @@ func (u *User) Register() (user *User, err error) {
 	if ex {
 		return nil, ErrUsernameExist
 	}
-	rclient := connections.GetRedisClient()
 
-	u.makeID()
+	u.driver.Register(u)
 
-	fields := make(map[string]string, 0)
-	fields[authFieldPassword] = u.password.Hash()
-	fields[authFieldUsername] = u.username
-	fields[authFieldID] = u.id
-
-	rclient.HMSet(u.userKey, fields).Result()
 	return u, nil
 }
 
-func (u *User) Delete() (deleted bool, err error) {
-	rclient := connections.GetRedisClient()
-	_, err = rclient.Del(u.userKey).Result()
-	if err != nil {
-		log.Debugf("%s", err.Error())
-		return false, err
-	}
-	return true, nil
+func NewUserFromUsername(username string) (u *User, err error) {
+	return NewUserHandler().driver.GetByUsername(username)
 }
 
-func (u *User) UsernameExists() (exist bool, err error) {
-	exist, err = connections.GetRedisClient().Exists(u.userKey).Result()
+func (u *User) MakePasswordHash(p string) string {
+
+	h := sha256.New()
+	io.WriteString(h, p)
+
+	pwmd5 := fmt.Sprintf("%x", h.Sum(nil))
+
+	salt1 := "$2a$10$b4MO31Gyjs.qjI5f7JTzIOTrJ071ixZxl0mW.3WMJv1Kw2PGc7ZNe"
+	salt2 := "$2a$10$ZiObC.2HCeV0VcAEdgADGeTL/7fBZUo/HokSwA4z8uUb8UF4jPWRO"
+
+	// salt1 + username + salt2 + MD5 splicing
+	io.WriteString(h, salt1)
+	// io.WriteString(h, "abc")
+	io.WriteString(h, salt2)
+	io.WriteString(h, pwmd5)
+
+	last := fmt.Sprintf("%x", h.Sum(nil))
+	return last
+}
+
+func (u *User) PassHash() string {
+	h := u.MakePasswordHash(u.Password)
+	return string(h)
+}
+
+func (u *User) SetPassword(pasword string) *User {
+	u.Password = pasword
+	return u
+}
+
+func (u *User) SetUsername(username string) *User {
+	u.Username = username
+	return u
+}
+
+func (u *User) Login() (bool, error) {
+	checkU, err := NewUserFromUsername(u.Username)
 	if err != nil {
-		log.Debugf("%s", err.Error())
-		return false, err
+		return authDeny, err
 	}
-	return
+
+	if u.PassHash() == checkU.Password {
+		return authAllow, nil
+	}
+
+	return authDeny, nil
+}
+
+func (u *User) DeleteByUsername() (deleted bool, err error) {
+	return u.driver.DeleteByUsername(u.Username)
 }

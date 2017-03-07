@@ -32,11 +32,11 @@ func TestLogin(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	for _, user := range userList {
-		u, err := NewUserFromUsername(user.username)
+		_, err := NewUserFromUsername(user.username)
 		if err != nil {
 			t.Fatalf("error in delete account %s", err)
 		}
-		deleted, err := u.Delete()
+		deleted, err := NewUserHandler().SetUsername(user.username).DeleteByUsername()
 		if err != nil {
 			t.Fatalf("%s", err.Error())
 		}
