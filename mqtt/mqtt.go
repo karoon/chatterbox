@@ -103,6 +103,8 @@ func (flags *ConnectFlags) Show() {
 	fmt.Println("\n=====================")
 }
 
+// ReadFixedHeader docs
+// http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718020
 func ReadFixedHeader(conn *net.Conn) *FixedHeader {
 	var buf = make([]byte, 2)
 	n, _ := io.ReadFull(*conn, buf)

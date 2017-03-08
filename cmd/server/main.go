@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net"
@@ -105,20 +106,63 @@ func setupLogging() {
 }
 
 func main() {
+	finish := make(chan bool)
 	flag.Parse()
 	setupLogging()
 	mqtt.RecoverFromRedis()
 
+	// go tcp8883()
+	go tcp1883()
+
+	<-finish
+}
+
+func tcp1883() {
+	finish := make(chan bool)
 	log.Debugf("Gossipd kicking off, listening localhost:%d", *gPort)
 
 	link, _ := net.Listen("tcp", fmt.Sprintf(":%d", *gPort))
 	defer link.Close()
 
-	for {
-		conn, err := link.Accept()
-		if err != nil {
-			continue
+	go func() {
+		for {
+			conn, err := link.Accept()
+			if err != nil {
+				continue
+			}
+			go handleConnection(&conn)
 		}
-		go handleConnection(&conn)
+	}()
+	<-finish
+}
+
+// ssl implementation
+func tcp8883() {
+	finish := make(chan bool)
+
+	cer, err := tls.LoadX509KeyPair("server.crt", "server.key")
+	if err != nil {
+		log.Debugf("%s", err)
+		return
 	}
+
+	config := &tls.Config{Certificates: []tls.Certificate{cer}}
+	ln, err := tls.Listen("tcp", ":8883", config)
+	if err != nil {
+		log.Debugf("%s", err)
+		return
+	}
+	defer ln.Close()
+
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				log.Debugf("%s", err)
+				continue
+			}
+			go handleConnection(&conn)
+		}
+	}()
+	<-finish
 }

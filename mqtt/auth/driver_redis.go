@@ -70,3 +70,38 @@ func (r RedisDriver) DeleteByUsername(username string) (deleted bool, err error)
 	}
 	return true, nil
 }
+
+func (r RedisDriver) CheckACL(clientID, topic, acltype string) bool {
+	key := aclPrefix + clientID
+
+	res, err := r.client.HGetAll(key).Result()
+	if err != nil {
+		return aclDeny
+	}
+
+	for k, v := range res {
+		if k == topic {
+			if v == acltype {
+				return aclAllow
+			}
+		}
+	}
+
+	return aclDeny
+}
+
+func (r RedisDriver) SetACL(clientID, topic, acltype string) {
+	key := aclPrefix + clientID
+
+	_, err := r.client.HSet(key, topic, acltype).Result()
+	if err != nil {
+		log.Debugf("%s", err.Error())
+	}
+}
+
+func (r RedisDriver) RemoveACL(clientID, topic string) {
+
+	key := aclPrefix + clientID
+
+	r.client.HDel(key, topic)
+}

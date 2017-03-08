@@ -4,22 +4,16 @@ import (
 	"testing"
 )
 
-var userList = []struct {
-	username string
-	password string
-}{
-	{"unit-test-vahid", "1234567"},
-	{"unit-test-saeed", "7654321"},
-}
-
-func TestRegister(t *testing.T) {
-	for _, user := range userList {
+func TestMongoRegister(t *testing.T) {
+	SetDriver(AuthDriverMongodb)
+	for _, user := range testAuthUserList {
 		NewUserHandler().SetUsername(user.username).SetPassword(user.password).Register()
 	}
 }
 
-func TestLogin(t *testing.T) {
-	for _, user := range userList {
+func TestMongoLogin(t *testing.T) {
+	SetDriver(AuthDriverMongodb)
+	for _, user := range testAuthUserList {
 		re, err := NewUserHandler().SetUsername(user.username).SetPassword(user.password).Login()
 		if err != nil {
 			t.Fatalf("error %s", err)
@@ -30,8 +24,9 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
-	for _, user := range userList {
+func TestMongoDelete(t *testing.T) {
+	SetDriver(AuthDriverMongodb)
+	for _, user := range testAuthUserList {
 		_, err := NewUserFromUsername(user.username)
 		if err != nil {
 			t.Fatalf("error in delete account %s", err)

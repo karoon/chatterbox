@@ -7,30 +7,42 @@ import (
 	"io"
 )
 
-var authModelDriver = "redis"
+const (
+	AuthDriverRedis int = iota + 1
+	AuthDriverMongodb
+)
 
-// var authModelDriver = "mongodb"
+// var authModelDriver = "redis"
+
+var authModelDriver = AuthDriverRedis
 
 // ErrUsernameExist username exist error
 var ErrUsernameExist = errors.New("username already exist")
 
+func SetDriver(authDriver int) {
+	authModelDriver = authDriver
+}
+
 // User struct
 type User struct {
-	ID       string `json:"id" bson:"id"`
-	Username string `json:"username" bson:"username"`
-	Password string `json:"password" bson:"password"`
+	ID        string   `json:"id" bson:"_id"`
+	Username  string   `json:"username" bson:"username"`
+	Password  string   `json:"password" bson:"password"`
+	Publish   []string `bson:"publish"`
+	Subscribe []string `bson:"subscribe"`
+	PubSub    []string `bson:"pubsub"`
 
-	driver Driver
+	driver AuthDriver
 }
 
 func NewUserHandler() *User {
 	u := &User{}
 
 	switch authModelDriver {
-	case "redis":
-		u.driver = ModelDriver{newRedisDriver()}
-	case "mongodb":
-		u.driver = ModelDriver{newMongoDriver()}
+	case AuthDriverRedis:
+		u.driver = AuthModelDriver{newRedisDriver()}
+	case AuthDriverMongodb:
+		u.driver = AuthModelDriver{newMongoDriver()}
 	}
 
 	return u
@@ -108,4 +120,16 @@ func (u *User) Login() (bool, error) {
 
 func (u *User) DeleteByUsername() (deleted bool, err error) {
 	return u.driver.DeleteByUsername(u.Username)
+}
+
+func (u *User) CheckACL(clientID, topic, acltype string) bool {
+	return u.driver.CheckACL(clientID, topic, acltype)
+}
+
+func (u *User) SetACL(clientID, topic, acltype string) {
+	u.driver.SetACL(clientID, topic, acltype)
+}
+
+func (u *User) RemoveACL(clientID, topic string) {
+	u.driver.RemoveACL(clientID, topic)
 }

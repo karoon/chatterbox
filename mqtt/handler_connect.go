@@ -1,6 +1,7 @@
 package mqtt
 
 import (
+	"chatterbox/mqtt/auth"
 	"fmt"
 	"net"
 
@@ -36,6 +37,19 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	} else {
 		log.Debugf("Appears to be new client, will create ClientRep")
 	}
+
+	/* Authentication */
+	re, err := auth.NewUserHandler().SetUsername(mqtt.Username).SetPassword(mqtt.Password).Login()
+	if err != nil {
+		log.Debugf("error in auth")
+		SendConnack(SERVER_UNAVAILABLE, conn, nil)
+	}
+	if re == false {
+		log.Debugf("error in check authentication with %s and password %s", mqtt.Username, mqtt.Password)
+		// auth.NewUserHandler().SetUsername(mqtt.Username).SetPassword(mqtt.Password).Register()
+		SendConnack(BAD_USERNAME_OR_PASSWORD, conn, nil)
+	}
+	/* End of authentication */
 
 	clientRep = CreateClientRep(clientID, conn, mqtt)
 
