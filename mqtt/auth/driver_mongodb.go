@@ -33,21 +33,21 @@ func newMongoDriver() MongoDriver {
 	return rd
 }
 
-func (r MongoDriver) MakeID() string {
+func (m MongoDriver) MakeID() string {
 	return uuid.New()
 }
 
-func (r MongoDriver) Register(u *User) {
+func (m MongoDriver) Register(u *User) {
 	u.Password = u.PassHash()
 	u.ID = bson.NewObjectId().Hex()
 
-	r.authCollection.Insert(u)
+	m.authCollection.Insert(u)
 
 	return
 }
 
-func (r MongoDriver) CheckUsername(username string) (exist bool, err error) {
-	c, err := r.authCollection.Find(bson.M{"username": username}).Count()
+func (m MongoDriver) CheckUsername(username string) (exist bool, err error) {
+	c, err := m.authCollection.Find(bson.M{"username": username}).Count()
 	if err != nil {
 		log.Debugf("%s", err.Error())
 		return false, err
@@ -58,23 +58,23 @@ func (r MongoDriver) CheckUsername(username string) (exist bool, err error) {
 	return false, nil
 }
 
-func (r MongoDriver) GetByUsername(username string) (u *User, err error) {
+func (m MongoDriver) GetByUsername(username string) (u *User, err error) {
 	u = NewUserHandler()
-	r.authCollection.Find(bson.M{"username": username}).One(&u)
+	m.authCollection.Find(bson.M{"username": username}).One(&u)
 
 	return u, nil
 }
 
-func (r MongoDriver) DeleteByUsername(username string) (deleted bool, err error) {
-	r.authCollection.Remove(bson.M{"username": username})
+func (m MongoDriver) DeleteByUsername(username string) (deleted bool, err error) {
+	m.authCollection.Remove(bson.M{"username": username})
 
 	return true, nil
 }
 
-func (r MongoDriver) CheckACL(clientID, topic, acltype string) bool {
+func (m MongoDriver) CheckACL(clientID, topic, acltype string) bool {
 	var u User
 
-	r.aclCollection.Find(bson.M{"username": clientID}).One(&u)
+	m.aclCollection.Find(bson.M{"username": clientID}).One(&u)
 
 	switch acltype {
 	case AclPub:
@@ -99,7 +99,7 @@ func (r MongoDriver) CheckACL(clientID, topic, acltype string) bool {
 	return aclDeny
 }
 
-func (r MongoDriver) SetACL(clientID, topic, acltype string) {
+func (m MongoDriver) SetACL(clientID, topic, acltype string) {
 	var key string
 	switch acltype {
 	case AclPub:
@@ -112,11 +112,11 @@ func (r MongoDriver) SetACL(clientID, topic, acltype string) {
 
 	selector := bson.M{"username": clientID}
 	update := bson.M{"$addToSet": bson.M{key: topic}}
-	r.aclCollection.Upsert(selector, update)
+	m.aclCollection.Upsert(selector, update)
 
 }
 
-func (r MongoDriver) RemoveACL(clientID, topic string) {
+func (m MongoDriver) RemoveACL(clientID, topic string) {
 	selector := bson.M{"username": clientID}
-	r.aclCollection.Remove(selector)
+	m.aclCollection.Remove(selector)
 }

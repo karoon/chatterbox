@@ -131,5 +131,5 @@ func (u *User) SetACL(clientID, topic, acltype string) {
 }
 
 func (u *User) RemoveACL(clientID, topic string) {
-	u.driver.RemoveACL(clientID, topic)
+	// u.driver.RemoveACL(clientID, topic)
 }
