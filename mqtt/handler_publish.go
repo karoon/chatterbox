@@ -22,7 +22,7 @@ func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	topic := mqtt.TopicName
 
 	if !auth.NewUserHandler().CheckACL(clientID, topic, auth.ACLPub) {
-		log.Debugf("client %s hasnt permission to %s on topic: %s", clientID, auth.ACLPub, topic)
+		log.Debugf("client %s hasn't permission to %s on topic: %s", clientID, auth.ACLPub, topic)
 		return
 	}
 
@@ -63,7 +63,7 @@ func PublishMessage(mqttMsg *MqttMessage) {
 
 	if mqttMsg.Retain {
 		GlobalRedisClient.SetRetainMessage(topic, mqttMsg)
-		log.Debugf("Set the message(%s) as the current retain content of topic:%s", payload, topic)
+		log.Debugf("Set the message(%s) as the current retain content of topic: %s", payload, topic)
 	}
 
 	// Dispatch delivering jobs
