@@ -7,14 +7,9 @@ import (
 	"io"
 )
 
-const (
-	AuthDriverRedis int = iota + 1
-	AuthDriverMongodb
-)
-
 // var authModelDriver = "redis"
 
-var authModelDriver = AuthDriverRedis
+var authModelDriver = AuthDriverMongodb
 
 // ErrUsernameExist username exist error
 var ErrUsernameExist = errors.New("username already exist")

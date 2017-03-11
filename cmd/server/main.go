@@ -56,6 +56,8 @@ func handleConnection(conn *net.Conn) {
 			return
 		}
 
+		log.Debugf("message type: %s ", mqtt.MessageTypeStr(fixedHeader.MessageType))
+
 		mqttParsed, err := mqtt.DecodeAfterFixedHeader(fixedHeader, body)
 		if err != nil {
 			log.Debug(connStr, "read command body failed:", err.Error())
@@ -67,7 +69,9 @@ func handleConnection(conn *net.Conn) {
 		} else {
 			clientID = client.ClientID
 		}
+
 		log.Debugf("Got request: %s from %s", mqtt.MessageTypeStr(fixedHeader.MessageType), clientID)
+
 		proc, found := gCmdRoute[fixedHeader.MessageType]
 		if !found {
 			log.Debugf("Handler func not found for message type: %d(%s)",

@@ -21,8 +21,8 @@ func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	clientRep.UpdateLastTime()
 	topic := mqtt.TopicName
 
-	if !auth.NewUserHandler().CheckACL(clientID, topic, auth.AclPub) {
-		log.Debugf("client hasnt permission")
+	if !auth.NewUserHandler().CheckACL(clientID, topic, auth.ACLPub) {
+		log.Debugf("client %s hasnt permission to %s on topic: %s", clientID, auth.ACLPub, topic)
 		return
 	}
 

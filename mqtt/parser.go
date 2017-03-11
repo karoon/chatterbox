@@ -48,6 +48,7 @@ func getConnectFlags(b []byte, p *int) *ConnectFlags {
 }
 
 func DecodeAfterFixedHeader(fixed_header *FixedHeader, buf []byte) (mqtt *Mqtt, err error) {
+	mqtt = new(Mqtt)
 	idx := 0
 	mqtt.FixedHeader = fixed_header
 

@@ -1,6 +1,7 @@
 package mqtt
 
 import (
+	"chatterbox/mqtt/auth"
 	"fmt"
 	"net"
 
@@ -26,10 +27,15 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 	GlobalSubsLock.Lock()
 	for i := 0; i < len(mqtt.Topics); i++ {
+
 		topic := mqtt.Topics[i]
 		qos := mqtt.TopicsQos[i]
-		log.Debugf("will subscribe client(%s) to topic(%s) with qos=%d",
-			clientID, topic, qos)
+		log.Debugf("will subscribe client(%s) to topic(%s) with qos=%d", clientID, topic, qos)
+
+		if !auth.NewUserHandler().CheckACL(clientID, topic, auth.ACLSub) {
+			log.Debugf("client %s hasn't permission to %s on topic: %s", clientID, "subscribe", topic)
+			return
+		}
 
 		subs := GlobalSubs[topic]
 		if subs == nil {
@@ -55,6 +61,7 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 			log.Debugf("delivered retained message for (%s)", topic)
 		}
 	}
+
 	log.Debugf("Subscriptions are all processed, will send SUBACK")
 	showSubscriptions()
 }

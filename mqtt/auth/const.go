@@ -8,6 +8,11 @@ const (
 )
 
 const (
+	AuthDriverRedis int = iota + 1
+	AuthDriverMongodb
+)
+
+const (
 	authAllow = true
 	authDeny  = false
 )
@@ -22,9 +27,12 @@ const (
 )
 
 const (
-	AclSub    = "1" // acl for subscribe
-	AclPub    = "2" // acl for publish
-	AclPubSub = "3" // acl for publish subscribe
+	// ACLSub for subscribe id
+	ACLSub = "1"
+	// ACLPub for publish id
+	ACLPub = "2"
+	// ACLPubSub for publish id
+	ACLPubSub = "3"
 )
 
 const (

@@ -76,37 +76,38 @@ func (m MongoDriver) CheckACL(clientID, topic, acltype string) bool {
 
 	m.aclCollection.Find(bson.M{"username": clientID}).One(&u)
 
+	for _, m := range u.PubSub {
+		if m == topic {
+			return aclAllow
+		}
+	}
+
 	switch acltype {
-	case AclPub:
+	case ACLPub:
 		for _, m := range u.Publish {
 			if m == topic {
 				return aclAllow
 			}
 		}
-	case AclSub:
+	case ACLSub:
 		for _, m := range u.Subscribe {
 			if m == topic {
 				return aclAllow
 			}
 		}
-	case AclPubSub:
-		for _, m := range u.PubSub {
-			if m == topic {
-				return aclAllow
-			}
-		}
 	}
+
 	return aclDeny
 }
 
 func (m MongoDriver) SetACL(clientID, topic, acltype string) {
 	var key string
 	switch acltype {
-	case AclPub:
+	case ACLPub:
 		key = "publish"
-	case AclSub:
+	case ACLSub:
 		key = "subscribe"
-	case AclPubSub:
+	case ACLPubSub:
 		key = "pubsub"
 	}
 
