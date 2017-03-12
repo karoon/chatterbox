@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"chatterbox/mqtt/connections"
+	"chatterbox/boxq/connections"
 
 	log "github.com/cihub/seelog"
 	"github.com/pborman/uuid"

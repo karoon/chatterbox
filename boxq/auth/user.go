@@ -2,7 +2,8 @@ package auth
 
 import (
 	"chatterbox/boxconfig"
-	"chatterbox/mqtt/types"
+	"chatterbox/boxq/types"
+
 	"crypto/sha256"
 	"errors"
 	"fmt"

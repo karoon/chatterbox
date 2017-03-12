@@ -1,8 +1,6 @@
 package auth
 
-import "chatterbox/mqtt/types"
-
-// import "mqtt/types"
+import "chatterbox/boxq/types"
 
 const (
 	authPrefix        = "mqtt_user:"

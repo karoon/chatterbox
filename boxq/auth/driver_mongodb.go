@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"chatterbox/mqtt/connections"
+	"chatterbox/boxq/connections"
 
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"

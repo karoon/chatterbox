@@ -1,7 +1,7 @@
 package mqtt
 
 import (
-	"chatterbox/mqtt/auth"
+	"chatterbox/boxq/auth"
 	"fmt"
 	"net"
 

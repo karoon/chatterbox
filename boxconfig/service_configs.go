@@ -1,6 +1,6 @@
 package boxconfig
 
-import "chatterbox/mqtt/types"
+import "chatterbox/boxq/types"
 
 type AuthConfiguration struct {
 	Driver      types.AuthDriverType

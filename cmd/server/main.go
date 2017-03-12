@@ -11,7 +11,8 @@ import (
 	"github.com/cihub/seelog"
 
 	"chatterbox/boxconfig"
-	mqtt "chatterbox/mqtt"
+	"chatterbox/boxq/mqtt"
+	// mqtt "chatterbox/mqtt"
 )
 
 type CmdFunc func(mqtt *mqtt.Mqtt, conn *net.Conn, client **mqtt.ClientRep)
