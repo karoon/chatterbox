@@ -2,8 +2,8 @@ package types
 
 // auth action type values
 const (
-	AuthActionTypeAllow = "allow"
-	AuthActionTypeDeny  = "deny"
+	AuthActionTypeAllow = DictAllow
+	AuthActionTypeDeny  = DictDeny
 )
 
 // auth driver type values

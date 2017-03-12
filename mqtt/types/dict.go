@@ -4,4 +4,6 @@ package types
 const (
 	DictRedis   = "redis"
 	DictMongoDB = "mongodb"
+	DictAllow   = "allow"
+	DictDeny    = "deny"
 )

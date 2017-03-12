@@ -113,8 +113,6 @@ func (u *User) Login() (bool, error) {
 	}
 
 	return boxconfig.NewConfigHandler().Auth.AuthNoMatch.Bool(), nil
-
-	// return authDeny.Bool(), nil
 }
 
 func (u *User) DeleteByUsername() (deleted bool, err error) {
