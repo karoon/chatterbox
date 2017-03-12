@@ -6,9 +6,9 @@ import "chatterbox/mqtt/types"
 
 const (
 	authPrefix        = "mqtt_user:"
-	authFieldPassword = "password"
-	authFieldID       = "id"
-	authFieldUsername = "username"
+	authFieldPassword = types.DictPassword
+	authFieldID       = types.DictID
+	authFieldUsername = types.DictUsername
 )
 
 const (

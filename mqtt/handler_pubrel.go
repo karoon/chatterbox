@@ -3,7 +3,7 @@ package mqtt
 import (
 	"net"
 
-	log "github.com/cihub/seelog"
+	"github.com/cihub/seelog"
 )
 
 /* Handle PUBREL */
@@ -17,6 +17,6 @@ func HandlePubrel(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	clientRep := *client
 
 	messageID := mqtt.MessageID
-	log.Debugf("Handling PUBREL, client:(%s), messageID:(%d)", clientID, messageID)
+	seelog.Debugf("Handling PUBREL, client:(%s), messageID:(%d)", clientID, messageID)
 	SendPubcomb(messageID, conn, clientRep.WriteLock)
 }

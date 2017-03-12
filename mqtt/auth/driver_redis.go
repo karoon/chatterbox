@@ -104,8 +104,6 @@ func (r RedisDriver) SetACL(clientID, topic, acltype string) {
 }
 
 func (r RedisDriver) RemoveACL(clientID, topic string) {
-
 	key := aclPrefix + clientID
-
 	r.client.HDel(key, topic)
 }

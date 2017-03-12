@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	log "github.com/cihub/seelog"
+	"github.com/cihub/seelog"
 )
 
 // Handle CONNECT
@@ -13,16 +13,16 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	// mqtt.Show()
 	clientID := mqtt.ClientID
 
-	log.Debugf("Hanling CONNECT, client id:(%s)", clientID)
+	seelog.Debugf("Hanling CONNECT, client id:(%s)", clientID)
 
 	if len(clientID) > ClientIDLimit {
-		log.Debugf("client id(%s) is longer than %d, will send IDENTIFIER_REJECTED", clientID, ClientIDLimit)
+		seelog.Debugf("client id(%s) is longer than %d, will send IDENTIFIER_REJECTED", clientID, ClientIDLimit)
 		SendConnack(IDENTIFIER_REJECTED, conn, nil)
 		return
 	}
 
 	if mqtt.ProtocolName != "MQIsdp" || mqtt.ProtocolVersion != 3 {
-		log.Debugf("ProtocolName(%s) and/or version(%d) not supported, will send UNACCEPTABLE_PROTOCOL_VERSION",
+		seelog.Debugf("ProtocolName(%s) and/or version(%d) not supported, will send UNACCEPTABLE_PROTOCOL_VERSION",
 			mqtt.ProtocolName, mqtt.ProtocolVersion)
 		SendConnack(UNACCEPTABLE_PROTOCOL_VERSION, conn, nil)
 		return
@@ -31,21 +31,21 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	GlobalClientsLock.Lock()
 	clientRep, existed := GlobalClients[clientID]
 	if existed {
-		log.Debugf("%s existed, will close old connection", clientID)
+		seelog.Debugf("%s existed, will close old connection", clientID)
 		ForceDisconnect(clientRep, nil, DONT_SEND_WILL)
 
 	} else {
-		log.Debugf("Appears to be new client, will create ClientRep")
+		seelog.Debugf("Appears to be new client, will create ClientRep")
 	}
 
 	/* Authentication */
 	re, err := auth.NewUserHandler().SetUsername(mqtt.Username).SetPassword(mqtt.Password).Login()
 	if err != nil {
-		log.Debugf("error in auth")
+		seelog.Debugf("error in auth")
 		SendConnack(SERVER_UNAVAILABLE, conn, nil)
 	}
 	if re == false {
-		log.Debugf("error in check authentication with %s and password %s", mqtt.Username, mqtt.Password)
+		seelog.Debugf("error in check authentication with %s and password %s", mqtt.Username, mqtt.Password)
 		// auth.NewUserHandler().SetUsername(mqtt.Username).SetPassword(mqtt.Password).Register()
 		SendConnack(BAD_USERNAME_OR_PASSWORD, conn, nil)
 	}
@@ -58,7 +58,7 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 	*client = clientRep
 	go CheckTimeout(clientRep)
-	log.Debugf("Timeout checker go-routine started")
+	seelog.Debugf("Timeout checker go-routine started")
 
 	if !clientRep.Mqtt.ConnectFlags.CleanSession {
 		// deliver flying messages
@@ -77,5 +77,5 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	}
 
 	SendConnack(ACCEPTED, conn, clientRep.WriteLock)
-	log.Debugf("New client is all set and CONNACK is sent")
+	seelog.Debugf("New client is all set and CONNACK is sent")
 }

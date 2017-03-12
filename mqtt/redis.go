@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/cihub/seelog"
+	"github.com/cihub/seelog"
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -25,7 +25,7 @@ func StartRedisClient() *RedisClient {
 	if err != nil {
 		panic("Failed to connect to Redis at port 6379")
 	} else {
-		log.Info("Redis client started")
+		seelog.Info("Redis client started")
 	}
 
 	client := new(RedisClient)
@@ -41,27 +41,27 @@ func ping_pong_redis(client *RedisClient, interval int) {
 		g_redis_lock.Lock()
 		(*client.Conn).Do("PING")
 		g_redis_lock.Unlock()
-		log.Debugf("sent PING to redis")
+		seelog.Debugf("sent PING to redis")
 	}
 }
 
 func (client *RedisClient) Reconnect() {
-	log.Debugf("aqquiring g_redis_lock")
+	seelog.Debugf("aqquiring g_redis_lock")
 
 	conn, err := redis.Dial("tcp", ":6379")
 	if err != nil {
 		panic("Failed to connect to Redis at port 6379")
 	} else {
-		log.Info("Redis client reconncted")
+		seelog.Info("Redis client reconncted")
 	}
 	client.Conn = &conn
 }
 
 func (client *RedisClient) Store(key string, value interface{}) {
-	log.Debugf("aqquiring g_redis_lock, store key=(%s)", key)
+	seelog.Debugf("aqquiring g_redis_lock, store key=(%s)", key)
 	g_redis_lock.Lock()
 	defer g_redis_lock.Unlock()
-	log.Debugf("aqquired g_redis_lock, store key=(%s)", key)
+	seelog.Debugf("aqquired g_redis_lock, store key=(%s)", key)
 
 	client.StoreNoLock(key, value)
 }
@@ -84,15 +84,15 @@ func (client *RedisClient) StoreNoLock(key string, value interface{}) {
 			panic(fmt.Sprintf("redis failed to set key(%s): %s", key, err))
 		}
 	}
-	log.Debugf("stored to redis, key=%s, val(some bytes), returned=%s",
+	seelog.Debugf("stored to redis, key=%s, val(some bytes), returned=%s",
 		key, ret)
 }
 
 func (client *RedisClient) Fetch(key string, value interface{}) int {
-	log.Debugf("aqquiring g_redis_lock, fetch key=(%s)", key)
+	seelog.Debugf("aqquiring g_redis_lock, fetch key=(%s)", key)
 	g_redis_lock.Lock()
 	defer g_redis_lock.Unlock()
-	log.Debugf("aqquired g_redis_lock, fetch key=(%s)", key)
+	seelog.Debugf("aqquired g_redis_lock, fetch key=(%s)", key)
 
 	return client.FetchNoLock(key, value)
 }
@@ -104,7 +104,7 @@ func (client *RedisClient) FetchNoLock(key string, value interface{}) int {
 			client.Reconnect()
 			return client.FetchNoLock(key, value)
 		} else {
-			log.Debugf("redis failed to fetch key(%s): %s",
+			seelog.Debugf("redis failed to fetch key(%s): %s",
 				key, err)
 			return 1
 		}
@@ -142,14 +142,14 @@ func (client *RedisClient) GetRetainMessage(topic string) *MqttMessage {
 	var internalID uint64
 	ret := client.Fetch(key, &internalID)
 	if ret != 0 {
-		log.Debugf("retained message internal id not found in redis for topic(%s)", topic)
+		seelog.Debugf("retained message internal id not found in redis for topic(%s)", topic)
 		return nil
 	}
 
 	key = fmt.Sprintf("chatterbox.mqtt-msg.%d", internalID)
 	ret = client.Fetch(key, &msg)
 	if ret != 0 {
-		log.Debugf("retained message, though internal id found, not found in redis for topic(%s)", topic)
+		seelog.Debugf("retained message, though internal id found, not found in redis for topic(%s)", topic)
 		return nil
 	}
 	return msg
@@ -185,7 +185,7 @@ func (client *RedisClient) AddFlyingMessage(dest_id string, flyMsg *FlyingMessag
 	messages := *client.GetFlyingMessagesForClient(dest_id)
 	messages[flyMsg.ClientMessageID] = *flyMsg
 	client.SetFlyingMessagesForClient(dest_id, &messages)
-	log.Debugf("Added flying message to redis client:(%s), message_id:(%d)",
+	seelog.Debugf("Added flying message to redis client:(%s), message_id:(%d)",
 		dest_id, flyMsg.ClientMessageID)
 }
 

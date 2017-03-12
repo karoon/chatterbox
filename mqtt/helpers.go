@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/cihub/seelog"
+	"github.com/cihub/seelog"
 )
 
 // This is the main place to change if we need to use channel rather than lock
@@ -25,7 +25,7 @@ func MqttSendToClient(bytes []byte, conn *net.Conn, lock *sync.Mutex) {
 func CheckTimeout(client *ClientRep) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Debugf("got panic, will print stack")
+			seelog.Debugf("got panic, will print stack")
 			debug.PrintStack()
 			panic(r)
 		}
@@ -44,15 +44,15 @@ func CheckTimeout(client *ClientRep) {
 
 			if deadline < now {
 				ForceDisconnect(client, GlobalClientsLock, SEND_WILL)
-				log.Debugf("client(%s) is timeout, kicked out",
+				seelog.Debugf("client(%s) is timeout, kicked out",
 					clientID)
 			} else {
-				log.Debugf("client(%s) will be kicked out in %d seconds",
+				seelog.Debugf("client(%s) will be kicked out in %d seconds",
 					clientID,
 					deadline-now)
 			}
 		case <-client.Shuttingdown:
-			log.Debugf("client(%s) is being shutting down, stopped timeout checker", clientID)
+			seelog.Debugf("client(%s) is being shutting down, stopped timeout checker", clientID)
 			return
 		}
 
@@ -68,40 +68,40 @@ func ForceDisconnect(client *ClientRep, lock *sync.Mutex, send_will uint8) {
 
 	clientID := client.Mqtt.ClientID
 
-	log.Debugf("Disconnecting client(%s), clean-session:%t",
+	seelog.Debugf("Disconnecting client(%s), clean-session:%t",
 		clientID, client.Mqtt.ConnectFlags.CleanSession)
 
 	if lock != nil {
 		lock.Lock()
-		log.Debugf("lock accuired")
+		seelog.Debugf("lock accuired")
 	}
 
 	delete(GlobalClients, clientID)
 
 	if client.Mqtt.ConnectFlags.CleanSession {
 		// remove her subscriptions
-		log.Debugf("Removing subscriptions for (%s)", clientID)
+		seelog.Debugf("Removing subscriptions for (%s)", clientID)
 		GlobalSubsLock.Lock()
 		for topic := range client.Subscriptions {
 			delete(GlobalSubs[topic], clientID)
 			if len(GlobalSubs[topic]) == 0 {
 				delete(GlobalSubs, topic)
-				log.Debugf("last subscription of topic(%s) is removed, so this topic is removed as well", topic)
+				seelog.Debugf("last subscription of topic(%s) is removed, so this topic is removed as well", topic)
 			}
 		}
 		showSubscriptions()
 		GlobalSubsLock.Unlock()
-		log.Debugf("Removed all subscriptions for (%s)", clientID)
+		seelog.Debugf("Removed all subscriptions for (%s)", clientID)
 
 		// remove her flying messages
-		log.Debugf("Removing all flying messages for (%s)", clientID)
+		seelog.Debugf("Removing all flying messages for (%s)", clientID)
 		GlobalRedisClient.RemoveAllFlyingMessagesForClient(clientID)
-		log.Debugf("Removed all flying messages for (%s)", clientID)
+		seelog.Debugf("Removed all flying messages for (%s)", clientID)
 	}
 
 	if lock != nil {
 		lock.Unlock()
-		log.Debugf("lock released")
+		seelog.Debugf("lock released")
 	}
 
 	// FIXME: Send will if requested
@@ -116,28 +116,28 @@ func ForceDisconnect(client *ClientRep, lock *sync.Mutex, send_will uint8) {
 			time.Now().Unix(), will_retain)
 		PublishMessage(mqttMsg)
 
-		log.Debugf("Sent will for %s, topic:(%s), payload:(%s)",
+		seelog.Debugf("Sent will for %s, topic:(%s), payload:(%s)",
 			clientID, will_topic, will_payload)
 	}
 
 	client.Shuttingdown <- 1
-	log.Debugf("Sent 1 to shutdown channel")
+	seelog.Debugf("Sent 1 to shutdown channel")
 
-	log.Debugf("Closing socket of %s", clientID)
+	seelog.Debugf("Closing socket of %s", clientID)
 	(*client.Conn).Close()
 }
 
 func DeliverOnConnection(clientID string) {
-	log.Debugf("client(%s) just reconnected, delivering on the fly messages", clientID)
+	seelog.Debugf("client(%s) just reconnected, delivering on the fly messages", clientID)
 	messages := GlobalRedisClient.GetFlyingMessagesForClient(clientID)
 	empty := make(map[uint16]FlyingMessage)
 	GlobalRedisClient.SetFlyingMessagesForClient(clientID, &empty)
-	log.Debugf("client(%s), all flying messages put in pipeline, removed records in redis", clientID)
+	seelog.Debugf("client(%s), all flying messages put in pipeline, removed records in redis", clientID)
 
 	for messageID, msg := range *messages {
 		internalID := msg.MessageInternalID
 		mqttMsg := GetMqttMessageByID(internalID)
-		log.Debugf("re-delivering message(id=%d, internalID=%d) for %s",
+		seelog.Debugf("re-delivering message(id=%d, internalID=%d) for %s",
 			messageID, internalID, clientID)
 		switch msg.Status {
 		case PENDING_PUB:
@@ -161,7 +161,7 @@ func DeliverMessage(destClientID string, qos uint8, msg *MqttMessage) {
 
 	if !found {
 		GlobalRedisClient.AddFlyingMessage(destClientID, flyMsg)
-		log.Debugf("client(%s) is offline, added flying message to Redis, message id=%d",
+		seelog.Debugf("client(%s) is offline, added flying message to Redis, message id=%d",
 			destClientID, messageID)
 		return
 	}
@@ -184,12 +184,12 @@ func DeliverMessage(destClientID string, qos uint8, msg *MqttMessage) {
 
 	// FIXME: add write deatline
 	(*conn).Write(bytes)
-	log.Debugf("message sent by Write()")
+	seelog.Debugf("message sent by Write()")
 
 	if qos == 1 {
 		flyMsg.Status = PENDING_ACK
 		GlobalRedisClient.AddFlyingMessage(destClientID, flyMsg)
-		log.Debugf("message(msg_id=%d) sent to client(%s), waiting for ACK, added to redis",
+		seelog.Debugf("message(msg_id=%d) sent to client(%s), waiting for ACK, added to redis",
 			messageID, destClientID)
 	}
 }
@@ -197,13 +197,13 @@ func DeliverMessage(destClientID string, qos uint8, msg *MqttMessage) {
 func Deliver(destClientID string, destQos uint8, msg *MqttMessage) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Debugf("got panic, will print stack")
+			seelog.Debugf("got panic, will print stack")
 			debug.PrintStack()
 			panic(r)
 		}
 	}()
 
-	log.Debugf("Delivering msg(internalID=%d) to client(%s)", msg.InternalID, destClientID)
+	seelog.Debugf("Delivering msg(internalID=%d) to client(%s)", msg.InternalID, destClientID)
 
 	// Get effective qos: the smaller of the publisher and the subscriber
 	qos := msg.Qos
@@ -222,14 +222,14 @@ func Deliver(destClientID string, destQos uint8, msg *MqttMessage) {
 func RetryDeliver(sleep uint64, destClientID string, qos uint8, msg *MqttMessage) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Debugf("got panic, will print stack")
+			seelog.Debugf("got panic, will print stack")
 			debug.PrintStack()
 			panic(r)
 		}
 	}()
 
 	if sleep > 3600*4 {
-		log.Debugf("too long retry delay(%s), abort retry deliver", sleep)
+		seelog.Debugf("too long retry delay(%s), abort retry deliver", sleep)
 		return
 	}
 
@@ -237,11 +237,11 @@ func RetryDeliver(sleep uint64, destClientID string, qos uint8, msg *MqttMessage
 
 	if GlobalRedisClient.IsFlyingMessagePendingAck(destClientID, msg.MessageID) {
 		DeliverMessage(destClientID, qos, msg)
-		log.Debugf("Retried delivering message %s:%d, will sleep %d seconds before next attampt",
+		seelog.Debugf("Retried delivering message %s:%d, will sleep %d seconds before next attampt",
 			destClientID, msg.MessageID, sleep*2)
 		RetryDeliver(sleep*2, destClientID, qos, msg)
 	} else {
-		log.Debugf("message (%s:%d) is not pending ACK, stop retry delivering",
+		seelog.Debugf("message (%s:%d) is not pending ACK, stop retry delivering",
 			destClientID, msg.MessageID)
 	}
 }

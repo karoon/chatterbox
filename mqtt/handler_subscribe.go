@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	log "github.com/cihub/seelog"
+	"github.com/cihub/seelog"
 )
 
 /* Handle SUBSCRIBE */
@@ -16,7 +16,7 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	}
 
 	clientID := (*client).Mqtt.ClientID
-	log.Debugf("Handling SUBSCRIBE, clientID: %s", clientID)
+	seelog.Debugf("Handling SUBSCRIBE, clientID: %s", clientID)
 	clientRep := *client
 	clientRep.UpdateLastTime()
 
@@ -30,16 +30,16 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 		topic := mqtt.Topics[i]
 		qos := mqtt.TopicsQos[i]
-		log.Debugf("will subscribe client(%s) to topic(%s) with qos=%d", clientID, topic, qos)
+		seelog.Debugf("will subscribe client(%s) to topic(%s) with qos=%d", clientID, topic, qos)
 
 		if !auth.NewUserHandler().CheckACL(clientID, topic, auth.ACLSub) {
-			log.Debugf("client %s hasn't permission to %s on topic: %s", clientID, "subscribe", topic)
+			seelog.Debugf("client %s hasn't permission to %s on topic: %s", clientID, "subscribe", topic)
 			return
 		}
 
 		subs := GlobalSubs[topic]
 		if subs == nil {
-			log.Debugf("current subscription is the first client to topic:(%s)", topic)
+			seelog.Debugf("current subscription is the first client to topic:(%s)", topic)
 			subs = make(map[string]uint8)
 			GlobalSubs[topic] = subs
 		}
@@ -54,14 +54,14 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 			GlobalRedisClient.Store(key, clientRep.Subscriptions)
 		}
 
-		log.Debugf("finding retained message for (%s)", topic)
+		seelog.Debugf("finding retained message for (%s)", topic)
 		retainedMsg := GlobalRedisClient.GetRetainMessage(topic)
 		if retainedMsg != nil {
 			go Deliver(clientID, qos, retainedMsg)
-			log.Debugf("delivered retained message for (%s)", topic)
+			seelog.Debugf("delivered retained message for (%s)", topic)
 		}
 	}
 
-	log.Debugf("Subscriptions are all processed, will send SUBACK")
+	seelog.Debugf("Subscriptions are all processed, will send SUBACK")
 	showSubscriptions()
 }

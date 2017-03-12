@@ -3,7 +3,7 @@ package mqtt
 import (
 	"net"
 
-	log "github.com/cihub/seelog"
+	"github.com/cihub/seelog"
 )
 
 /* Handle PINGREQ */
@@ -14,10 +14,10 @@ func HandlePingreq(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	}
 
 	clientID := (*client).Mqtt.ClientID
-	log.Debugf("Handling PINGREQ, clientID: %s", clientID)
+	seelog.Debugf("Handling PINGREQ, clientID: %s", clientID)
 	clientRep := *client
 	clientRep.UpdateLastTime()
 
 	SendPingresp(conn, clientRep.WriteLock)
-	log.Debugf("Sent PINGRESP, clientID: %s", clientID)
+	seelog.Debugf("Sent PINGRESP, clientID: %s", clientID)
 }

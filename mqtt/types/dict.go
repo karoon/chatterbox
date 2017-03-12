@@ -2,8 +2,11 @@ package types
 
 // Services dictionary
 const (
-	DictRedis   = "redis"
-	DictMongoDB = "mongodb"
-	DictAllow   = "allow"
-	DictDeny    = "deny"
+	DictAllow    = "allow"
+	DictDeny     = "deny"
+	DictID       = "id"
+	DictMongoDB  = "mongodb"
+	DictPassword = "password"
+	DictRedis    = "redis"
+	DictUsername = "username"
 )

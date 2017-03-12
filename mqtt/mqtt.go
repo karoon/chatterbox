@@ -6,7 +6,7 @@ import (
 	"net"
 	"sync"
 
-	log "github.com/cihub/seelog"
+	"github.com/cihub/seelog"
 )
 
 // GlobalClients of mqtt
@@ -29,7 +29,7 @@ var GlobalRedisClient = StartRedisClient()
 func RecoverFromRedis() {
 	// Reconstruct the subscription map from redis records
 	clientIDKeys := GlobalRedisClient.GetSubsClients()
-	log.Info("Recovering subscription info from Redis")
+	seelog.Info("Recovering subscription info from Redis")
 	for _, clientIDKey := range clientIDKeys {
 		subMap := make(map[string]uint8)
 		GlobalRedisClient.Fetch(clientIDKey, &subMap)
@@ -40,13 +40,13 @@ func RecoverFromRedis() {
 			// lock won't be needed since this is at the startup phase
 			subs := GlobalSubs[topic]
 			if subs == nil {
-				log.Debug("current subscription is the first client to topic:", topic)
+				seelog.Debug("current subscription is the first client to topic:", topic)
 				subs = make(map[string]uint8)
 				GlobalSubs[topic] = subs
 			}
 			subs[clientID] = qos
 		}
-		log.Debugf("client(%s) subscription info recovered", clientID)
+		seelog.Debugf("client(%s) subscription info recovered", clientID)
 	}
 }
 
@@ -54,13 +54,13 @@ func (mqtt *Mqtt) Show() {
 	if mqtt.FixedHeader != nil {
 		mqtt.FixedHeader.Show()
 	} else {
-		log.Debug("Fixed header is nil")
+		seelog.Debug("Fixed header is nil")
 	}
 
 	if mqtt.ConnectFlags != nil {
 		mqtt.ConnectFlags.Show()
 	} else {
-		log.Debug("ConnectFlags is nil")
+		seelog.Debug("ConnectFlags is nil")
 	}
 
 	fmt.Println("ProtocolName:", mqtt.ProtocolName)
@@ -109,7 +109,7 @@ func ReadFixedHeader(conn *net.Conn) *FixedHeader {
 	var buf = make([]byte, 2)
 	n, _ := io.ReadFull(*conn, buf)
 	if n != len(buf) {
-		log.Debug("read header failed")
+		seelog.Debug("read header failed")
 		return nil
 	}
 
@@ -128,7 +128,7 @@ func ReadFixedHeader(conn *net.Conn) *FixedHeader {
 func ReadCompleteCommand(conn *net.Conn) (*FixedHeader, []byte) {
 	fixedHeader := ReadFixedHeader(conn)
 	if fixedHeader == nil {
-		log.Debug("failed to read fixed header")
+		seelog.Debug("failed to read fixed header")
 		return nil, make([]byte, 0)
 	}
 	length := fixedHeader.Length
@@ -137,7 +137,7 @@ func ReadCompleteCommand(conn *net.Conn) (*FixedHeader, []byte) {
 	if uint32(n) != length {
 		panic(fmt.Sprintf("failed to read %d bytes specified in fixed header, only %d read", length, n))
 	}
-	log.Debugf("Complete command(%s) read into buffer", MessageTypeStr(fixedHeader.MessageType))
+	seelog.Debugf("Complete command(%s) read into buffer", MessageTypeStr(fixedHeader.MessageType))
 
 	return fixedHeader, buf
 }
@@ -148,7 +148,7 @@ func parseConnectInfo(buf []byte) *ConnectInfo {
 	info.Protocol, buf = parseUTF8(buf)
 	info.Version, buf = parseUint8(buf)
 	flagByte := buf[0]
-	log.Debug("parsing connect flag:", flagByte)
+	seelog.Debug("parsing connect flag:", flagByte)
 	info.UsernameFlag = (flagByte & 0x80) > 0
 	info.PasswordFlag = (flagByte & 0x40) > 0
 	info.WillRetain = (flagByte & 0x20) > 0

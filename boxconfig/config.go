@@ -3,7 +3,6 @@ package boxconfig
 import (
 	"encoding/json"
 	"log"
-	// "fmt"
 	"os"
 	"path"
 	"runtime"

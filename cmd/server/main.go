@@ -8,7 +8,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	log "github.com/cihub/seelog"
+	"github.com/cihub/seelog"
 
 	"chatterbox/boxconfig"
 	mqtt "chatterbox/mqtt"
@@ -38,9 +38,9 @@ func handleConnection(conn *net.Conn) {
 	var client *mqtt.ClientRep
 
 	defer func() {
-		log.Debug("executing defered func in handleConnection")
+		seelog.Debug("executing defered func in handleConnection")
 		if r := recover(); r != nil {
-			log.Debugf("got panic:(%s) will close connection from %s:%s", r, remoteAddr.Network(), remoteAddr.String())
+			seelog.Debugf("got panic:(%s) will close connection from %s:%s", r, remoteAddr.Network(), remoteAddr.String())
 			debug.PrintStack()
 		}
 		if client != nil {
@@ -50,20 +50,20 @@ func handleConnection(conn *net.Conn) {
 	}()
 
 	connStr := fmt.Sprintf("%s:%s", string(remoteAddr.Network()), remoteAddr.String())
-	log.Debug("Got new conection", connStr)
+	seelog.Debug("Got new conection", connStr)
 	for {
 		// Read fixed header
 		fixedHeader, body := mqtt.ReadCompleteCommand(conn)
 		if fixedHeader == nil {
-			log.Debug(connStr, "reading header returned nil, will disconnect")
+			seelog.Debug(connStr, "reading header returned nil, will disconnect")
 			return
 		}
 
-		log.Debugf("message type: %s ", mqtt.MessageTypeStr(fixedHeader.MessageType))
+		seelog.Debugf("message type: %s ", mqtt.MessageTypeStr(fixedHeader.MessageType))
 
 		mqttParsed, err := mqtt.DecodeAfterFixedHeader(fixedHeader, body)
 		if err != nil {
-			log.Debug(connStr, "read command body failed:", err.Error())
+			seelog.Debug(connStr, "read command body failed:", err.Error())
 		}
 
 		var clientID string
@@ -73,11 +73,11 @@ func handleConnection(conn *net.Conn) {
 			clientID = client.ClientID
 		}
 
-		log.Debugf("Got request: %s from %s", mqtt.MessageTypeStr(fixedHeader.MessageType), clientID)
+		seelog.Debugf("Got request: %s from %s", mqtt.MessageTypeStr(fixedHeader.MessageType), clientID)
 
 		proc, found := gCmdRoute[fixedHeader.MessageType]
 		if !found {
-			log.Debugf("Handler func not found for message type: %d(%s)",
+			seelog.Debugf("Handler func not found for message type: %d(%s)",
 				fixedHeader.MessageType, mqtt.MessageTypeStr(fixedHeader.MessageType))
 			return
 		}
@@ -100,16 +100,16 @@ func setupLogging() {
 	</formats>
 </seelog>`, level)
 
-	logger, err := log.LoggerFromConfigAsBytes([]byte(config))
+	logger, err := seelog.LoggerFromConfigAsBytes([]byte(config))
 
 	if err != nil {
 		fmt.Println("Failed to config logging:", err)
 		os.Exit(1)
 	}
 
-	log.ReplaceLogger(logger)
+	seelog.ReplaceLogger(logger)
 
-	log.Info("Logging config is successful")
+	seelog.Info("Logging config is successful")
 }
 
 func main() {
@@ -127,7 +127,7 @@ func main() {
 
 func tcp1883() {
 	finish := make(chan bool)
-	log.Debugf("Chatterbox kicking off, listening localhost:%d", *gPort)
+	seelog.Debugf("Chatterbox kicking off, listening localhost:%d", *gPort)
 
 	link, _ := net.Listen("tcp", fmt.Sprintf(":%d", *gPort))
 	defer link.Close()
@@ -150,14 +150,14 @@ func tcp8883() {
 
 	cer, err := tls.LoadX509KeyPair("server.crt", "server.key")
 	if err != nil {
-		log.Debugf("%s", err)
+		seelog.Debugf("%s", err)
 		return
 	}
 
 	config := &tls.Config{Certificates: []tls.Certificate{cer}}
 	ln, err := tls.Listen("tcp", ":8883", config)
 	if err != nil {
-		log.Debugf("%s", err)
+		seelog.Debugf("%s", err)
 		return
 	}
 	defer ln.Close()
@@ -166,7 +166,7 @@ func tcp8883() {
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
-				log.Debugf("%s", err)
+				seelog.Debugf("%s", err)
 				continue
 			}
 			go handleConnection(&conn)
