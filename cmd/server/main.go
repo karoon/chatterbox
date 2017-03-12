@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"runtime/debug"
 
 	"github.com/cihub/seelog"
 
@@ -15,76 +14,11 @@ import (
 	// mqtt "chatterbox/mqtt"
 )
 
-type CmdFunc func(mqtt *mqtt.Mqtt, conn *net.Conn, client **mqtt.ClientRep)
-
 var gDebug = flag.Bool("d", false, "enable debugging log")
 var gPort = flag.Int("p", 1883, "port of the broker to listen")
 var gRedisPort = flag.Int("r", 6379, "port of the broker to listen")
 
 var chatConfig *boxconfig.Configuration
-
-var gCmdRoute = map[uint8]CmdFunc{
-	mqtt.CONNECT:     mqtt.HandleConnect,
-	mqtt.PUBLISH:     mqtt.HandlePublish,
-	mqtt.SUBSCRIBE:   mqtt.HandleSubscribe,
-	mqtt.UNSUBSCRIBE: mqtt.HandleUnsubscribe,
-	mqtt.PINGREQ:     mqtt.HandlePingreq,
-	mqtt.DISCONNECT:  mqtt.HandleDisconnect,
-	mqtt.PUBACK:      mqtt.HandlePuback,
-	mqtt.PUBREL:      mqtt.HandlePubrel,
-}
-
-func handleConnection(conn *net.Conn) {
-	remoteAddr := (*conn).RemoteAddr()
-	var client *mqtt.ClientRep
-
-	defer func() {
-		seelog.Debug("executing defered func in handleConnection")
-		if r := recover(); r != nil {
-			seelog.Debugf("got panic:(%s) will close connection from %s:%s", r, remoteAddr.Network(), remoteAddr.String())
-			debug.PrintStack()
-		}
-		if client != nil {
-			mqtt.ForceDisconnect(client, mqtt.GlobalClientsLock, mqtt.SEND_WILL)
-		}
-		(*conn).Close()
-	}()
-
-	connStr := fmt.Sprintf("%s:%s", string(remoteAddr.Network()), remoteAddr.String())
-	seelog.Debug("Got new conection", connStr)
-	for {
-		// Read fixed header
-		fixedHeader, body := mqtt.ReadCompleteCommand(conn)
-		if fixedHeader == nil {
-			seelog.Debug(connStr, "reading header returned nil, will disconnect")
-			return
-		}
-
-		seelog.Debugf("message type: %s ", mqtt.MessageTypeStr(fixedHeader.MessageType))
-
-		mqttParsed, err := mqtt.DecodeAfterFixedHeader(fixedHeader, body)
-		if err != nil {
-			seelog.Debug(connStr, "read command body failed:", err.Error())
-		}
-
-		var clientID string
-		if client == nil {
-			clientID = ""
-		} else {
-			clientID = client.ClientID
-		}
-
-		seelog.Debugf("Got request: %s from %s", mqtt.MessageTypeStr(fixedHeader.MessageType), clientID)
-
-		proc, found := gCmdRoute[fixedHeader.MessageType]
-		if !found {
-			seelog.Debugf("Handler func not found for message type: %d(%s)",
-				fixedHeader.MessageType, mqtt.MessageTypeStr(fixedHeader.MessageType))
-			return
-		}
-		proc(mqttParsed, conn, &client)
-	}
-}
 
 func setupLogging() {
 	level := "info"
@@ -139,7 +73,7 @@ func tcp1883() {
 			if err != nil {
 				continue
 			}
-			go handleConnection(&conn)
+			go mqtt.HandleConnection(&conn)
 		}
 	}()
 	<-finish
@@ -170,7 +104,7 @@ func tcp8883() {
 				seelog.Debugf("%s", err)
 				continue
 			}
-			go handleConnection(&conn)
+			go mqtt.HandleConnection(&conn)
 		}
 	}()
 	<-finish
