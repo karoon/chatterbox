@@ -114,7 +114,7 @@ func ForceDisconnect(client *ClientRep, lock *sync.Mutex, send_will uint8) {
 		mqttMsg := CreateMqttMessage(will_topic, will_payload, clientID, will_qos,
 			0, // message id won't be used here
 			time.Now().Unix(), will_retain)
-		PublishMessage(mqttMsg)
+		publishMessage(mqttMsg)
 
 		seelog.Debugf("Sent will for %s, topic:(%s), payload:(%s)",
 			clientID, will_topic, will_payload)
@@ -169,7 +169,7 @@ func DeliverMessage(destClientID string, qos uint8, msg *MqttMessage) {
 	lock := clientRep.WriteLock
 
 	// FIXME: Add code to deal with failure
-	resp := CreateMqtt(PUBLISH)
+	resp := createMqtt(PUBLISH)
 	resp.TopicName = msg.Topic
 	if qos > 0 {
 		resp.MessageID = messageID
@@ -177,7 +177,7 @@ func DeliverMessage(destClientID string, qos uint8, msg *MqttMessage) {
 	resp.FixedHeader.QosLevel = qos
 	resp.Data = []byte(msg.Payload)
 
-	bytes, _ := Encode(resp)
+	bytes, _ := encode(resp)
 
 	lock.Lock()
 	defer lock.Unlock()

@@ -7,7 +7,7 @@ import (
 )
 
 /* Handle PINGREQ */
-func HandlePingreq(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+func handlePingreq(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	if *client == nil {
 		panic("client_resp is nil, that means we don't have ClientRep for this client sending PINGREQ")
 		return
@@ -18,6 +18,6 @@ func HandlePingreq(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	clientRep := *client
 	clientRep.UpdateLastTime()
 
-	SendPingresp(conn, clientRep.WriteLock)
+	sendPingresp(conn, clientRep.WriteLock)
 	seelog.Debugf("Sent PINGRESP, clientID: %s", clientID)
 }

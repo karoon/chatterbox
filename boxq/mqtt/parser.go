@@ -47,10 +47,10 @@ func getConnectFlags(b []byte, p *int) *ConnectFlags {
 	return flags
 }
 
-func DecodeAfterFixedHeader(fixed_header *FixedHeader, buf []byte) (mqtt *Mqtt, err error) {
+func decodeAfterFixedHeader(fixedHeader *FixedHeader, buf []byte) (mqtt *Mqtt, err error) {
 	mqtt = new(Mqtt)
 	idx := 0
-	mqtt.FixedHeader = fixed_header
+	mqtt.FixedHeader = fixedHeader
 
 	if mqtt.FixedHeader.Length != uint32(len(buf)) {
 		log.Panicf("fixed header length(%d) not equal to acutall buf length(%d)\n", mqtt.FixedHeader.Length, len(buf))
@@ -156,10 +156,10 @@ func DecodeAfterFixedHeader(fixed_header *FixedHeader, buf []byte) (mqtt *Mqtt, 
 	return mqtt, nil
 }
 
-func Decode(buf []byte) (*Mqtt, error) {
+func decode(buf []byte) (*Mqtt, error) {
 	inx := 0
-	fixed_header := getHeader(buf, &inx)
-	return DecodeAfterFixedHeader(fixed_header, buf[inx:])
+	fixedHeader := getHeader(buf, &inx)
+	return decodeAfterFixedHeader(fixedHeader, buf[inx:])
 }
 
 func setUint8(val uint8, buf *bytes.Buffer) {
@@ -202,17 +202,17 @@ func boolToByte(val bool) byte {
 	return byte(0)
 }
 
-func CreateMqtt(msg_type uint8) *Mqtt {
+func createMqtt(msgType uint8) *Mqtt {
 	mqtt := new(Mqtt)
 
-	fixed_header := new(FixedHeader)
-	fixed_header.MessageType = msg_type
-	mqtt.FixedHeader = fixed_header
+	fixedHeader := new(FixedHeader)
+	fixedHeader.MessageType = msgType
+	mqtt.FixedHeader = fixedHeader
 
-	connect_flags := new(ConnectFlags)
-	mqtt.ConnectFlags = connect_flags
+	connectFlags := new(ConnectFlags)
+	mqtt.ConnectFlags = connectFlags
 
-	switch msg_type {
+	switch msgType {
 
 	case CONNACK:
 		{
@@ -242,7 +242,7 @@ func CreateMqtt(msg_type uint8) *Mqtt {
 
 	default:
 		{
-			log.Panicf("Can't create Mqtt of type:%d", msg_type)
+			log.Panicf("Can't create Mqtt of type:%d", msgType)
 			return nil
 		}
 	}
@@ -250,7 +250,7 @@ func CreateMqtt(msg_type uint8) *Mqtt {
 	return mqtt
 }
 
-func Encode(mqtt *Mqtt) ([]byte, error) {
+func encode(mqtt *Mqtt) ([]byte, error) {
 	err := valid(mqtt)
 	if err != nil {
 		return nil, err

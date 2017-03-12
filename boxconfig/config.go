@@ -8,6 +8,8 @@ import (
 	"runtime"
 )
 
+// FixMe: we must using https://github.com/BurntSushi/toml
+
 var configuration *Configuration
 
 type Configuration struct {

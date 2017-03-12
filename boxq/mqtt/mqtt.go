@@ -84,7 +84,7 @@ func (mqtt *Mqtt) Show() {
 
 func (header *FixedHeader) Show() {
 	fmt.Println("header detail:")
-	fmt.Println("message type: ", MessageTypeStr(header.MessageType))
+	fmt.Println("message type: ", messageTypeStr(header.MessageType))
 	fmt.Println("DupFlag: ", header.DupFlag)
 	fmt.Println("Retain: ", header.Retain)
 	fmt.Println("QOS: ", header.QosLevel)
@@ -105,7 +105,7 @@ func (flags *ConnectFlags) Show() {
 
 // ReadFixedHeader docs
 // http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718020
-func ReadFixedHeader(conn *net.Conn) *FixedHeader {
+func readFixedHeader(conn *net.Conn) *FixedHeader {
 	var buf = make([]byte, 2)
 	n, _ := io.ReadFull(*conn, buf)
 	if n != len(buf) {
@@ -125,8 +125,8 @@ func ReadFixedHeader(conn *net.Conn) *FixedHeader {
 	return header
 }
 
-func ReadCompleteCommand(conn *net.Conn) (*FixedHeader, []byte) {
-	fixedHeader := ReadFixedHeader(conn)
+func readCompleteCommand(conn *net.Conn) (*FixedHeader, []byte) {
+	fixedHeader := readFixedHeader(conn)
 	if fixedHeader == nil {
 		seelog.Debug("failed to read fixed header")
 		return nil, make([]byte, 0)
@@ -137,7 +137,7 @@ func ReadCompleteCommand(conn *net.Conn) (*FixedHeader, []byte) {
 	if uint32(n) != length {
 		panic(fmt.Sprintf("failed to read %d bytes specified in fixed header, only %d read", length, n))
 	}
-	seelog.Debugf("Complete command(%s) read into buffer", MessageTypeStr(fixedHeader.MessageType))
+	seelog.Debugf("Complete command(%s) read into buffer", messageTypeStr(fixedHeader.MessageType))
 
 	return fixedHeader, buf
 }
@@ -160,21 +160,19 @@ func parseConnectInfo(buf []byte) *ConnectInfo {
 	return info
 }
 
-func (con_info *ConnectInfo) Show() {
+func (ci *ConnectInfo) show() {
 	fmt.Println("connect info detail:")
-	fmt.Println("Protocol:", con_info.Protocol)
-	fmt.Println("Version:", con_info.Version)
-	fmt.Println("Username Flag:", con_info.UsernameFlag)
-	fmt.Println("Password Flag:", con_info.PasswordFlag)
-	fmt.Println("WillRetain:", con_info.WillRetain)
-	fmt.Println("WillQos:", con_info.WillQos)
-	fmt.Println("WillFlag:", con_info.WillFlag)
-	fmt.Println("CleanSession:", con_info.CleanSession)
+	fmt.Println("Protocol:", ci.Protocol)
+	fmt.Println("Version:", ci.Version)
+	fmt.Println("Username Flag:", ci.UsernameFlag)
+	fmt.Println("Password Flag:", ci.PasswordFlag)
+	fmt.Println("WillRetain:", ci.WillRetain)
+	fmt.Println("WillQos:", ci.WillQos)
+	fmt.Println("WillFlag:", ci.WillFlag)
+	fmt.Println("CleanSession:", ci.CleanSession)
 
-	fmt.Println("Keepalive:", con_info.Keepalive)
+	fmt.Println("Keepalive:", ci.Keepalive)
 }
-
-// Fixed header parse
 
 func decodeVarLength(cur byte, conn *net.Conn) uint32 {
 	length := uint32(0)
@@ -211,7 +209,7 @@ func parseUTF8(buf []byte) (string, []byte) {
 	return string(str), buf[length:]
 }
 
-func MessageTypeStr(mt uint8) string {
+func messageTypeStr(mt uint8) string {
 	var strArray = []string{
 		"reserved",
 		"CONNECT",

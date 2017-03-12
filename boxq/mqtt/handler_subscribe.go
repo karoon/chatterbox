@@ -9,7 +9,7 @@ import (
 )
 
 /* Handle SUBSCRIBE */
-func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+func handleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	if *client == nil {
 		panic("client_resp is nil, that means we don't have ClientRep for this client sending SUBSCRIBE")
 		return
@@ -22,7 +22,7 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 	defer func() {
 		GlobalSubsLock.Unlock()
-		SendSuback(mqtt.MessageID, mqtt.TopicsQos, conn, clientRep.WriteLock)
+		sendSuback(mqtt.MessageID, mqtt.TopicsQos, conn, clientRep.WriteLock)
 	}()
 
 	GlobalSubsLock.Lock()

@@ -7,7 +7,7 @@ import (
 )
 
 /* Handle PUBACK */
-func HandlePuback(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+func handlePuback(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	if *client == nil {
 		panic("client_resp is nil, that means we don't have ClientRep for this client sending DISCONNECT")
 		return
@@ -19,11 +19,10 @@ func HandlePuback(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 	messages := GlobalRedisClient.GetFlyingMessagesForClient(clientID)
 
-	flying_msg, found := (*messages)[messageID]
+	flyingMsg, found := (*messages)[messageID]
 
-	if !found || flying_msg.Status != PENDING_ACK {
-		seelog.Debugf("message(id=%d, client=%s) is not PENDING_ACK, will ignore this PUBACK",
-			messageID, clientID)
+	if !found || flyingMsg.Status != PENDING_ACK {
+		seelog.Debugf("message(id=%d, client=%s) is not PENDING_ACK, will ignore this PUBACK", messageID, clientID)
 	} else {
 		delete(*messages, messageID)
 		GlobalRedisClient.SetFlyingMessagesForClient(clientID, messages)

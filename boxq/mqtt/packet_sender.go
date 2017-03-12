@@ -5,53 +5,53 @@ import (
 	"sync"
 )
 
-func SendConnack(rc uint8, conn *net.Conn, lock *sync.Mutex) {
-	resp := CreateMqtt(CONNACK)
+func sendConnack(rc uint8, conn *net.Conn, lock *sync.Mutex) {
+	resp := createMqtt(CONNACK)
 	resp.ReturnCode = rc
 
-	bytes, _ := Encode(resp)
+	bytes, _ := encode(resp)
 	MqttSendToClient(bytes, conn, lock)
 }
 
-func SendPubrec(messageID uint16, conn *net.Conn, lock *sync.Mutex) {
-	resp := CreateMqtt(PUBREC)
+func sendPubrec(messageID uint16, conn *net.Conn, lock *sync.Mutex) {
+	resp := createMqtt(PUBREC)
 	resp.MessageID = messageID
-	bytes, _ := Encode(resp)
+	bytes, _ := encode(resp)
 	MqttSendToClient(bytes, conn, lock)
 }
 
-func SendPuback(msg_id uint16, conn *net.Conn, lock *sync.Mutex) {
-	resp := CreateMqtt(PUBACK)
-	resp.MessageID = msg_id
-	bytes, _ := Encode(resp)
+func sendPuback(msgID uint16, conn *net.Conn, lock *sync.Mutex) {
+	resp := createMqtt(PUBACK)
+	resp.MessageID = msgID
+	bytes, _ := encode(resp)
 	MqttSendToClient(bytes, conn, lock)
 }
 
-func SendSuback(msg_id uint16, qos_list []uint8, conn *net.Conn, lock *sync.Mutex) {
-	resp := CreateMqtt(SUBACK)
-	resp.MessageID = msg_id
+func sendSuback(msgID uint16, qos_list []uint8, conn *net.Conn, lock *sync.Mutex) {
+	resp := createMqtt(SUBACK)
+	resp.MessageID = msgID
 	resp.TopicsQos = qos_list
 
-	bytes, _ := Encode(resp)
+	bytes, _ := encode(resp)
 	MqttSendToClient(bytes, conn, lock)
 }
 
-func SendUnsuback(msg_id uint16, conn *net.Conn, lock *sync.Mutex) {
-	resp := CreateMqtt(UNSUBACK)
-	resp.MessageID = msg_id
-	bytes, _ := Encode(resp)
+func sendUnsuback(msgID uint16, conn *net.Conn, lock *sync.Mutex) {
+	resp := createMqtt(UNSUBACK)
+	resp.MessageID = msgID
+	bytes, _ := encode(resp)
 	MqttSendToClient(bytes, conn, lock)
 }
 
-func SendPingresp(conn *net.Conn, lock *sync.Mutex) {
-	resp := CreateMqtt(PINGRESP)
-	bytes, _ := Encode(resp)
+func sendPingresp(conn *net.Conn, lock *sync.Mutex) {
+	resp := createMqtt(PINGRESP)
+	bytes, _ := encode(resp)
 	MqttSendToClient(bytes, conn, lock)
 }
 
-func SendPubcomb(msg_id uint16, conn *net.Conn, lock *sync.Mutex) {
-	resp := CreateMqtt(PUBCOMP)
-	resp.MessageID = msg_id
-	bytes, _ := Encode(resp)
+func sendPubcomb(msgID uint16, conn *net.Conn, lock *sync.Mutex) {
+	resp := createMqtt(PUBCOMP)
+	resp.MessageID = msgID
+	bytes, _ := encode(resp)
 	MqttSendToClient(bytes, conn, lock)
 }

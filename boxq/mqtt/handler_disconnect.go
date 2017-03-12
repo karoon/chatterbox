@@ -2,8 +2,7 @@ package mqtt
 
 import "net"
 
-/* Handle DISCONNECT */
-func HandleDisconnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+func handleDisconnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	if *client == nil {
 		panic("client_resp is nil, that means we don't have ClientRep for this client sending DISCONNECT")
 		return

@@ -10,7 +10,7 @@ import (
 )
 
 /* Handle PUBLISH*/
-func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+func handlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	if *client == nil {
 		panic("client_resp is nil, that means we don't have ClientRep for this client sending PUBLISH")
 		return
@@ -39,23 +39,21 @@ func HandlePublish(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	msgInternalID := mqttMsg.InternalID
 	seelog.Debugf("Created new MQTT message, internal id:(%s)", msgInternalID)
 
-	PublishMessage(mqttMsg)
+	publishMessage(mqttMsg)
 
 	switch qos {
 	case 1:
-		{
-			SendPuback(messageID, conn, clientRep.WriteLock)
-			seelog.Debugf("PUBACK sent to client(%s)", clientID)
-		}
+		sendPuback(messageID, conn, clientRep.WriteLock)
+		seelog.Debugf("PUBACK sent to client(%s)", clientID)
+
 	case 2:
-		{
-			SendPubrec(messageID, conn, clientRep.WriteLock)
-			seelog.Debugf("PUBREC sent to client(%s)", clientID)
-		}
+		sendPubrec(messageID, conn, clientRep.WriteLock)
+		seelog.Debugf("PUBREC sent to client(%s)", clientID)
+
 	}
 }
 
-func PublishMessage(mqttMsg *MqttMessage) {
+func publishMessage(mqttMsg *MqttMessage) {
 	topic := mqttMsg.Topic
 	payload := mqttMsg.Payload
 	seelog.Debugf("Publishing job, topic(%s), payload(%s)", topic, payload)

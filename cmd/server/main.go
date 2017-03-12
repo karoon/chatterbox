@@ -11,7 +11,6 @@ import (
 
 	"chatterbox/boxconfig"
 	"chatterbox/boxq/mqtt"
-	// mqtt "chatterbox/mqtt"
 )
 
 var gDebug = flag.Bool("d", false, "enable debugging log")
@@ -45,19 +44,6 @@ func setupLogging() {
 	seelog.ReplaceLogger(logger)
 
 	seelog.Info("Logging config is successful")
-}
-
-func main() {
-	finish := make(chan bool)
-	flag.Parse()
-	setupLogging()
-	chatConfig = boxconfig.NewConfigHandler()
-	mqtt.RecoverFromRedis()
-
-	// go tcp8883()
-	go tcp1883()
-
-	<-finish
 }
 
 func tcp1883() {
@@ -107,5 +93,18 @@ func tcp8883() {
 			go mqtt.HandleConnection(&conn)
 		}
 	}()
+	<-finish
+}
+
+func main() {
+	finish := make(chan bool)
+	flag.Parse()
+	setupLogging()
+	chatConfig = boxconfig.NewConfigHandler()
+	mqtt.RecoverFromRedis()
+
+	// go tcp8883()
+	go tcp1883()
+
 	<-finish
 }

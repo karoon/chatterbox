@@ -9,7 +9,7 @@ import (
 )
 
 // Handle CONNECT
-func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+func handleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	// mqtt.Show()
 	clientID := mqtt.ClientID
 
@@ -17,14 +17,14 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 	if len(clientID) > ClientIDLimit {
 		seelog.Debugf("client id(%s) is longer than %d, will send IDENTIFIER_REJECTED", clientID, ClientIDLimit)
-		SendConnack(IDENTIFIER_REJECTED, conn, nil)
+		sendConnack(IDENTIFIER_REJECTED, conn, nil)
 		return
 	}
 
 	if mqtt.ProtocolName != "MQIsdp" || mqtt.ProtocolVersion != 3 {
 		seelog.Debugf("ProtocolName(%s) and/or version(%d) not supported, will send UNACCEPTABLE_PROTOCOL_VERSION",
 			mqtt.ProtocolName, mqtt.ProtocolVersion)
-		SendConnack(UNACCEPTABLE_PROTOCOL_VERSION, conn, nil)
+		sendConnack(UNACCEPTABLE_PROTOCOL_VERSION, conn, nil)
 		return
 	}
 
@@ -42,12 +42,12 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	re, err := auth.NewUserHandler().SetUsername(mqtt.Username).SetPassword(mqtt.Password).Login()
 	if err != nil {
 		seelog.Debugf("error in auth")
-		SendConnack(SERVER_UNAVAILABLE, conn, nil)
+		sendConnack(SERVER_UNAVAILABLE, conn, nil)
 	}
 	if re == false {
 		seelog.Debugf("error in check authentication with %s and password %s", mqtt.Username, mqtt.Password)
 		// auth.NewUserHandler().SetUsername(mqtt.Username).SetPassword(mqtt.Password).Register()
-		SendConnack(BAD_USERNAME_OR_PASSWORD, conn, nil)
+		sendConnack(BAD_USERNAME_OR_PASSWORD, conn, nil)
 	}
 	/* End of authentication */
 
@@ -76,6 +76,6 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 		GlobalRedisClient.SetFlyingMessagesForClient(clientID, &empty)
 	}
 
-	SendConnack(ACCEPTED, conn, clientRep.WriteLock)
+	sendConnack(ACCEPTED, conn, clientRep.WriteLock)
 	seelog.Debugf("New client is all set and CONNACK is sent")
 }

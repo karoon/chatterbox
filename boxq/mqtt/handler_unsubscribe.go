@@ -7,7 +7,7 @@ import (
 )
 
 /* Handle UNSUBSCRIBE */
-func HandleUnsubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
+func handleUnsubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 	if *client == nil {
 		panic("client_resp is nil, that means we don't have ClientRep for this client sending UNSUBSCRIBE")
 		return
@@ -20,7 +20,7 @@ func HandleUnsubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 	defer func() {
 		GlobalSubsLock.Unlock()
-		SendUnsuback(mqtt.MessageID, conn, clientRep.WriteLock)
+		sendUnsuback(mqtt.MessageID, conn, clientRep.WriteLock)
 	}()
 
 	GlobalSubsLock.Lock()

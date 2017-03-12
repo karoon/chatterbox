@@ -35,3 +35,8 @@ const (
 	SEND_WILL = uint8(iota)
 	DONT_SEND_WILL
 )
+
+const (
+	PENDING_PUB = uint8(iota + 1)
+	PENDING_ACK
+)
