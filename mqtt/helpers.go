@@ -251,7 +251,7 @@ func RetryDeliver(sleep uint64, destClientID string, qos uint8, msg *MqttMessage
 // CONNECT didn't set clean session bit but current one does
 func RemoveAllSubscriptionsOnConnect(clientID string) {
 	subs := new(map[string]uint8)
-	key := fmt.Sprintf("gossipd.client-subs.%s", clientID)
+	key := fmt.Sprintf("chatterbox.client-subs.%s", clientID)
 	GlobalRedisClient.Fetch(key, subs)
 
 	GlobalRedisClient.Delete(key)

@@ -10,6 +10,7 @@ import (
 
 	log "github.com/cihub/seelog"
 
+	"chatterbox/boxconfig"
 	mqtt "chatterbox/mqtt"
 )
 
@@ -18,6 +19,8 @@ type CmdFunc func(mqtt *mqtt.Mqtt, conn *net.Conn, client **mqtt.ClientRep)
 var gDebug = flag.Bool("d", false, "enable debugging log")
 var gPort = flag.Int("p", 1883, "port of the broker to listen")
 var gRedisPort = flag.Int("r", 6379, "port of the broker to listen")
+
+var chatConfig *boxconfig.Configuration
 
 var gCmdRoute = map[uint8]CmdFunc{
 	mqtt.CONNECT:     mqtt.HandleConnect,
@@ -113,6 +116,7 @@ func main() {
 	finish := make(chan bool)
 	flag.Parse()
 	setupLogging()
+	chatConfig = boxconfig.NewConfigHandler()
 	mqtt.RecoverFromRedis()
 
 	// go tcp8883()
@@ -123,7 +127,7 @@ func main() {
 
 func tcp1883() {
 	finish := make(chan bool)
-	log.Debugf("Gossipd kicking off, listening localhost:%d", *gPort)
+	log.Debugf("Chatterbox kicking off, listening localhost:%d", *gPort)
 
 	link, _ := net.Listen("tcp", fmt.Sprintf(":%d", *gPort))
 	defer link.Close()

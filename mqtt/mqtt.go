@@ -34,7 +34,7 @@ func RecoverFromRedis() {
 		subMap := make(map[string]uint8)
 		GlobalRedisClient.Fetch(clientIDKey, &subMap)
 		var clientID string
-		fmt.Sscanf(clientIDKey, "gossipd.client-subs.%s", &clientID)
+		fmt.Sscanf(clientIDKey, "chatterbox.client-subs.%s", &clientID)
 
 		for topic, qos := range subMap {
 			// lock won't be needed since this is at the startup phase

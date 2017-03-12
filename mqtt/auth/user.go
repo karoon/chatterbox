@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"chatterbox/boxconfig"
+	"chatterbox/mqtt/types"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -14,7 +16,7 @@ var authModelDriver = AuthDriverMongodb
 // ErrUsernameExist username exist error
 var ErrUsernameExist = errors.New("username already exist")
 
-func SetDriver(authDriver int) {
+func SetDriver(authDriver types.AuthDriverType) {
 	authModelDriver = authDriver
 }
 
@@ -33,7 +35,7 @@ type User struct {
 func NewUserHandler() *User {
 	u := &User{}
 
-	switch authModelDriver {
+	switch boxconfig.NewConfigHandler().Auth.Driver {
 	case AuthDriverRedis:
 		u.driver = AuthModelDriver{newRedisDriver()}
 	case AuthDriverMongodb:
@@ -103,14 +105,16 @@ func (u *User) SetUsername(username string) *User {
 func (u *User) Login() (bool, error) {
 	checkU, err := NewUserFromUsername(u.Username)
 	if err != nil {
-		return authDeny, err
+		return authDeny.Bool(), err
 	}
 
 	if u.PassHash() == checkU.Password {
-		return authAllow, nil
+		return authAllow.Bool(), nil
 	}
 
-	return authDeny, nil
+	return boxconfig.NewConfigHandler().Auth.AuthNoMatch.Bool(), nil
+
+	// return authDeny.Bool(), nil
 }
 
 func (u *User) DeleteByUsername() (deleted bool, err error) {
@@ -118,7 +122,11 @@ func (u *User) DeleteByUsername() (deleted bool, err error) {
 }
 
 func (u *User) CheckACL(clientID, topic, acltype string) bool {
-	return u.driver.CheckACL(clientID, topic, acltype)
+	actType, noMatch := u.driver.CheckACL(clientID, topic, acltype)
+	if noMatch {
+		actType = boxconfig.NewConfigHandler().Auth.ACLNoMatch.Bool()
+	}
+	return actType
 }
 
 func (u *User) SetACL(clientID, topic, acltype string) {

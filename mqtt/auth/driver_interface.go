@@ -8,7 +8,7 @@ type AuthDriver interface {
 	MakeID() string
 	DeleteByUsername(username string) (deleted bool, err error)
 	/* ACL */
-	CheckACL(clientID, topic, acltype string) bool
+	CheckACL(clientID, topic, acltype string) (actType bool, noMatch bool)
 	SetACL(clientID, topic, acltype string)
 	RemoveACL(clientID, topic string)
 }

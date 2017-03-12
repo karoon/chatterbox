@@ -48,7 +48,6 @@ func TestSub(t *testing.T) {
 	}
 
 	c.Disconnect(250)
-
 }
 
 func TestPublish(t *testing.T) {

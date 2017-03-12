@@ -1,5 +1,9 @@
 package auth
 
+import "chatterbox/mqtt/types"
+
+// import "mqtt/types"
+
 const (
 	authPrefix        = "mqtt_user:"
 	authFieldPassword = "password"
@@ -8,13 +12,13 @@ const (
 )
 
 const (
-	AuthDriverRedis int = iota + 1
-	AuthDriverMongodb
+	AuthDriverRedis   types.AuthDriverType = types.AuthDriverTypeRedis
+	AuthDriverMongodb types.AuthDriverType = types.AuthDriverTypeMongodb
 )
 
 const (
-	authAllow = true
-	authDeny  = false
+	authAllow types.AuthActionType = types.AuthActionTypeAllow
+	authDeny  types.AuthActionType = types.AuthActionTypeDeny
 )
 
 const (
@@ -33,9 +37,4 @@ const (
 	ACLPub = "2"
 	// ACLPubSub for publish id
 	ACLPubSub = "3"
-)
-
-const (
-	ACLDriverRedis int = iota + 1
-	ACLDriverMongodb
 )

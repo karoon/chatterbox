@@ -65,7 +65,7 @@ func HandleConnect(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 		DeliverOnConnection(clientID)
 		// restore subscriptions to clientRep
 		subs := make(map[string]uint8)
-		key := fmt.Sprintf("gossipd.client-subs.%s", clientID)
+		key := fmt.Sprintf("chatterbox.client-subs.%s", clientID)
 		GlobalRedisClient.Fetch(key, &subs)
 		clientRep.Subscriptions = subs
 

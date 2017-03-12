@@ -71,23 +71,27 @@ func (r RedisDriver) DeleteByUsername(username string) (deleted bool, err error)
 	return true, nil
 }
 
-func (r RedisDriver) CheckACL(clientID, topic, acltype string) bool {
+func (r RedisDriver) CheckACL(clientID, topic, acltype string) (actType bool, noMatch bool) {
 	key := aclPrefix + clientID
 
 	res, err := r.client.HGetAll(key).Result()
 	if err != nil {
-		return aclDeny
+		actType = aclDeny
+		return actType, false
 	}
 
 	for k, v := range res {
 		if k == topic {
 			if v == acltype {
-				return aclAllow
+				actType = aclAllow
+				return actType, false
 			}
 		}
 	}
 
-	return aclDeny
+	actType = aclDeny
+
+	return actType, true
 }
 
 func (r RedisDriver) SetACL(clientID, topic, acltype string) {

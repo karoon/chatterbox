@@ -71,14 +71,15 @@ func (m MongoDriver) DeleteByUsername(username string) (deleted bool, err error)
 	return true, nil
 }
 
-func (m MongoDriver) CheckACL(clientID, topic, acltype string) bool {
+func (m MongoDriver) CheckACL(clientID, topic, acltype string) (actType bool, noMatch bool) {
 	var u User
 
 	m.aclCollection.Find(bson.M{"username": clientID}).One(&u)
 
 	for _, m := range u.PubSub {
 		if m == topic {
-			return aclAllow
+			actType = aclAllow
+			return actType, false
 		}
 	}
 
@@ -86,18 +87,20 @@ func (m MongoDriver) CheckACL(clientID, topic, acltype string) bool {
 	case ACLPub:
 		for _, m := range u.Publish {
 			if m == topic {
-				return aclAllow
+				actType = aclAllow
+				return actType, false
 			}
 		}
 	case ACLSub:
 		for _, m := range u.Subscribe {
 			if m == topic {
-				return aclAllow
+				actType = aclAllow
+				return actType, false
 			}
 		}
 	}
-
-	return aclDeny
+	actType = aclAllow
+	return actType, false
 }
 
 func (m MongoDriver) SetACL(clientID, topic, acltype string) {

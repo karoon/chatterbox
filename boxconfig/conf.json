@@ -1,0 +1,8 @@
+{
+  "Debug": true,
+  "Auth":{
+    "Driver": "redis",
+    "AuthNoMatch": "allow",
+    "ACLNoMatch": "allow"
+  }
+}

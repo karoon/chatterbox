@@ -35,7 +35,7 @@ func (msg *MqttMessage) Show() {
 }
 
 func (msg *MqttMessage) RedisKey() string {
-	return fmt.Sprintf("gossipd.mqtt-msg.%d", msg.InternalID)
+	return fmt.Sprintf("chatterbox.mqtt-msg.%d", msg.InternalID)
 }
 
 func (msg *MqttMessage) Store() {
@@ -77,7 +77,7 @@ func GetNextMessageInternalID() uint64 {
 
 // This is thread-safe
 func GetMqttMessageByID(internalID uint64) *MqttMessage {
-	key := fmt.Sprintf("gossipd.mqtt-msg.%d", internalID)
+	key := fmt.Sprintf("chatterbox.mqtt-msg.%d", internalID)
 
 	msg := new(MqttMessage)
 	GlobalRedisClient.Fetch(key, msg)

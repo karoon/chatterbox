@@ -50,7 +50,7 @@ func HandleSubscribe(mqtt *Mqtt, conn *net.Conn, client **ClientRep) {
 
 		if !clientRep.Mqtt.ConnectFlags.CleanSession {
 			// Store subscriptions to redis
-			key := fmt.Sprintf("gossipd.client-subs.%s", clientID)
+			key := fmt.Sprintf("chatterbox.client-subs.%s", clientID)
 			GlobalRedisClient.Store(key, clientRep.Subscriptions)
 		}
 

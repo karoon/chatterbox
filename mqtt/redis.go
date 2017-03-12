@@ -122,7 +122,7 @@ func (client *RedisClient) FetchNoLock(key string, value interface{}) int {
 func (client *RedisClient) GetSubsClients() []string {
 	g_redis_lock.Lock()
 	defer g_redis_lock.Unlock()
-	keys, _ := redis.Values((*client.Conn).Do("KEYS", "gossipd.client-subs.*"))
+	keys, _ := redis.Values((*client.Conn).Do("KEYS", "chatterbox.client-subs.*"))
 	clients := make([]string, 0)
 	for _, key := range keys {
 		clients = append(clients, string(key.([]byte)))
@@ -138,7 +138,7 @@ func (client *RedisClient) Delete(key string) {
 
 func (client *RedisClient) GetRetainMessage(topic string) *MqttMessage {
 	msg := new(MqttMessage)
-	key := fmt.Sprintf("gossipd.topic-retained.%s", topic)
+	key := fmt.Sprintf("chatterbox.topic-retained.%s", topic)
 	var internalID uint64
 	ret := client.Fetch(key, &internalID)
 	if ret != 0 {
@@ -146,7 +146,7 @@ func (client *RedisClient) GetRetainMessage(topic string) *MqttMessage {
 		return nil
 	}
 
-	key = fmt.Sprintf("gossipd.mqtt-msg.%d", internalID)
+	key = fmt.Sprintf("chatterbox.mqtt-msg.%d", internalID)
 	ret = client.Fetch(key, &msg)
 	if ret != 0 {
 		log.Debugf("retained message, though internal id found, not found in redis for topic(%s)", topic)
@@ -156,13 +156,13 @@ func (client *RedisClient) GetRetainMessage(topic string) *MqttMessage {
 }
 
 func (client *RedisClient) SetRetainMessage(topic string, msg *MqttMessage) {
-	key := fmt.Sprintf("gossipd.topic-retained.%s", topic)
+	key := fmt.Sprintf("chatterbox.topic-retained.%s", topic)
 	internalID := msg.InternalID
 	client.Store(key, internalID)
 }
 
 func (client *RedisClient) GetFlyingMessagesForClient(client_id string) *map[uint16]FlyingMessage {
-	key := fmt.Sprintf("gossipd.client-msg.%s", client_id)
+	key := fmt.Sprintf("chatterbox.client-msg.%s", client_id)
 	messages := make(map[uint16]FlyingMessage)
 	client.Fetch(key, &messages)
 	return &messages
@@ -170,12 +170,12 @@ func (client *RedisClient) GetFlyingMessagesForClient(client_id string) *map[uin
 
 func (client *RedisClient) SetFlyingMessagesForClient(client_id string,
 	messages *map[uint16]FlyingMessage) {
-	key := fmt.Sprintf("gossipd.client-msg.%s", client_id)
+	key := fmt.Sprintf("chatterbox.client-msg.%s", client_id)
 	client.Store(key, messages)
 }
 
 func (client *RedisClient) RemoveAllFlyingMessagesForClient(client_id string) {
-	key := fmt.Sprintf("gossipd.client-msg.%s", client_id)
+	key := fmt.Sprintf("chatterbox.client-msg.%s", client_id)
 	g_redis_lock.Lock()
 	defer g_redis_lock.Unlock()
 	(*client.Conn).Do("DEL", key)
