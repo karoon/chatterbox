@@ -14,7 +14,6 @@ import (
 
 	"chatterbox/boxconfig"
 	"chatterbox/boxq/mqtt"
-	"chatterbox/boxq/packet"
 	// "chatterbox/boxq/proto"
 )
 
@@ -66,7 +65,7 @@ func tcp1883() {
 			}
 
 			c := mqtt.NewConnFromNetConn(&conn)
-			seelog.Debugf("format %s", c)
+			// seelog.Debugf("format %s", c)
 
 			go mqtt.HandleConnection(&c)
 		}
@@ -81,9 +80,7 @@ func main() {
 	chatConfig = boxconfig.NewConfigHandler()
 	mqtt.RecoverFromRedis()
 
-	// go tcp8883()
 	go tcp1883()
-	// go ws()
 
 	http.Handle("/", websocket.Handler(wshandler))
 
@@ -100,70 +97,11 @@ func main() {
 func wshandler(ws *websocket.Conn) {
 	ws.PayloadType = websocket.BinaryFrame
 
-	// bws := bufio.NewReadWriter(bufio.NewReader(ws), bufio.NewWriter(ws))
+	c := mqtt.NewConnFromWebSocket(ws)
+	seelog.Debugf("format %s", c)
 
-	for {
-		// var hdr proto.Header
-		// msgType, _, _ := hdr.Decode(bws)
+	mqtt.HandleConnection(&c)
 
-		// b, err := bws.ReadBytes(delim)
-		var data []byte
-		websocket.Message.Receive(ws, &data)
-		l, mt := packet.DetectPacket(data)
-
-		seelog.Debug(l, mt)
-
-		pkt2, err := mt.New()
-		if err != nil {
-			seelog.Debug(err.Error()) // packet type is invalid
-			return
-		}
-
-		// Decode packet.
-		_, err = pkt2.Decode(data)
-		if err != nil {
-			seelog.Debug(err.Error()) // there was an error while decoding
-			return
-		}
-
-		switch pkt2.Type() {
-		case packet.CONNECT:
-			c := pkt2.(*packet.ConnectPacket)
-			seelog.Debug(c.Username, c.Password)
-			packet.NewConnackPacket().Encode(data)
-			websocket.Message.Send(ws, data)
-		case packet.DISCONNECT:
-			packet.NewDisconnectPacket().Encode(data)
-			websocket.Message.Send(ws, data)
-		case packet.PUBLISH:
-			packet.NewPubackPacket().Encode(data)
-			websocket.Message.Send(ws, data)
-		}
-
-		// msg, err := proto.DecodeOneMessage(bws, nil)
-
-		// seelog.Debug("webs->", msg, bws)
-		// if err != nil {
-		// 	seelog.Debug(err.Error())
-		// 	seelog.Debug("close connection")
-		// 	ws.Close()
-		// 	return
-		// }
-
-		// switch msgType {
-		// case proto.MsgConnect:
-		// 	ca, err := proto.NewMessage(proto.MsgConnAck)
-		// 	if err != nil {
-		// 		seelog.Debug(err.Error())
-		// 	}
-		// 	wbuffer := new(bytes.Buffer)
-		// 	ca.Encode(wbuffer)
-		// 	bws.Write(wbuffer.Bytes())
-
-		// 	bws.Flush()
-		// }
-
-	}
 }
 
 // ssl implementation
